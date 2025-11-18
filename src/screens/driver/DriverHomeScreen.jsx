@@ -22,11 +22,29 @@ import fcmService from '../../services/fcmService';
 import authService from '../../services/authService';
 import vehicleService from '../../services/vehicleService';
 import rideService from '../../services/rideService';
+import paymentService from '../../services/paymentService';
 import { locationStorageService } from '../../services/locationStorageService';
 import RideOfferModal from '../../components/RideOfferModal';
 import notificationService from '../../services/notificationService';
 
 const { width } = Dimensions.get('window');
+
+const extractAmount = (value) => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'number') return value;
+  if (typeof value === 'object') {
+    if (typeof value.amount === 'number') return value.amount;
+    if (typeof value.amount === 'string') {
+      const parsed = parseFloat(value.amount);
+      return Number.isNaN(parsed) ? null : parsed;
+    }
+  }
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value);
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+  return null;
+};
 
 const DriverHomeScreen = ({ navigation }) => {
   const insets = useSafeAreaInsets();
@@ -83,6 +101,69 @@ const DriverHomeScreen = ({ navigation }) => {
     }
   }, []);
 
+  const loadDriverStats = useCallback(async () => {
+    try {
+      const [earningsSummary, transactionsResponse] = await Promise.all([
+        paymentService.getDriverEarnings().catch(() => null),
+        paymentService.getTransactionHistory(0, 100).catch(() => null),
+      ]);
+
+      const txnList = Array.isArray(transactionsResponse?.content)
+        ? transactionsResponse.content
+        : Array.isArray(transactionsResponse?.data)
+          ? transactionsResponse.data
+          : Array.isArray(transactionsResponse)
+            ? transactionsResponse
+            : [];
+
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
+      let todayAmount = 0;
+      const rideIds = new Set();
+
+      txnList.forEach((txn) => {
+        if (!txn) return;
+        const type = (txn.type || '').toUpperCase();
+        const direction = (txn.direction || '').toUpperCase();
+        if (type !== 'CAPTURE_FARE' || direction !== 'IN') return;
+
+        const createdRaw = txn.createdAt || txn.created_at;
+        if (!createdRaw) return;
+        const createdAt = new Date(createdRaw);
+        if (Number.isNaN(createdAt.getTime()) || createdAt < todayStart) return;
+
+        const amount = extractAmount(txn.amount);
+        if (Number.isFinite(amount)) {
+          todayAmount += amount;
+        }
+
+        const rideKey =
+          txn.sharedRideId ||
+          txn.shared_ride_id ||
+          txn.sharedRideRequestId ||
+          txn.shared_ride_request_id;
+        if (rideKey) {
+          rideIds.add(rideKey);
+        }
+      });
+
+      const ratingValue =
+        authService.getCurrentUser()?.driver_profile?.rating_average;
+
+      setDriverStats((prev) => ({
+        ...prev,
+        todayEarnings: todayAmount,
+        totalRides: rideIds.size,
+        rating: typeof ratingValue === 'number' ? ratingValue : prev.rating,
+        balance:
+          extractAmount(earningsSummary?.availableBalance) ?? prev.balance,
+      }));
+    } catch (error) {
+      console.error('Failed to load driver stats:', error);
+    }
+  }, []);
+
   useEffect(() => {
     initializeDriver();
     
@@ -93,6 +174,10 @@ const DriverHomeScreen = ({ navigation }) => {
       websocketService.disconnect();
     };
   }, []);
+
+  useEffect(() => {
+    loadDriverStats();
+  }, [loadDriverStats]);
 
   // Load shared rides when switching to shared tab
   useEffect(() => {
@@ -114,7 +199,8 @@ const DriverHomeScreen = ({ navigation }) => {
   useFocusEffect(
     useCallback(() => {
       fetchUnreadCount();
-    }, [fetchUnreadCount])
+      loadDriverStats();
+    }, [fetchUnreadCount, loadDriverStats])
   );
 
   const initializeDriver = async () => {
@@ -123,6 +209,12 @@ const DriverHomeScreen = ({ navigation }) => {
       
       const currentUser = authService.getCurrentUser();
       setUser(currentUser);
+      if (currentUser?.driver_profile?.rating_average) {
+        setDriverStats((prev) => ({
+          ...prev,
+          rating: currentUser.driver_profile.rating_average,
+        }));
+      }
       
       const locationData = await locationStorageService.getCurrentLocationWithAddress();
       if (locationData.location) {
@@ -130,6 +222,7 @@ const DriverHomeScreen = ({ navigation }) => {
       }
       
       await loadVehicles();
+      await loadDriverStats();
       
       try {
         await fcmService.initialize();
@@ -653,6 +746,10 @@ const DriverHomeScreen = ({ navigation }) => {
     
     setCurrentOffer(null);
     setOfferCountdown(0);
+
+    if (accepted) {
+      loadDriverStats();
+    }
   };
 
   const handleAcceptRequest = (request) => {
@@ -721,23 +818,6 @@ const DriverHomeScreen = ({ navigation }) => {
         }
       }
     ]);
-  };
-
-  const extractAmount = (value) => {
-    if (value === null || value === undefined) return null;
-    if (typeof value === 'number') return value;
-    if (typeof value === 'object') {
-      if (typeof value.amount === 'number') return value.amount;
-      if (typeof value.amount === 'string') {
-        const parsed = parseFloat(value.amount);
-        return isNaN(parsed) ? null : parsed;
-      }
-    }
-    if (typeof value === 'string') {
-      const parsed = parseFloat(value);
-      return isNaN(parsed) ? null : parsed;
-    }
-    return null;
   };
 
   const formatCurrency = (amount) => {

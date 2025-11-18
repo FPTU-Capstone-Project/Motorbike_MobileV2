@@ -622,37 +622,27 @@ const [timePart, setTimePart] = React.useState(() => {
 
       console.log("Creating shared ride with data:", rideData);
       const result = await rideService.createSharedRide(rideData);
+      const createdRideId =
+        result?.shared_ride_id ||
+        result?.sharedRideId ||
+        result?.rideId ||
+        result?.id;
 
-      Alert.alert(
-        "Thành công!",
-        `Đã tạo chuyến đi chia sẻ `,
-        [
-          {
-            text: "Xem chi tiết",
-            onPress: () => {
+      Alert.alert("Thành công!", "Đã tạo chuyến đi chia sẻ", [
+        {
+          text: "Xem chi tiết",
+          onPress: () => {
+            if (createdRideId) {
+              navigation.replace("DriverRideDetails", {
+                rideId: createdRideId,
+                ride: result,
+              });
+            } else {
               navigation.goBack();
-              // TODO: Navigate to ride details
-            },
+            }
           },
-          {
-            text: "Tạo thêm",
-            onPress: () => {
-              // Reset form
-              setStartLocation(null);
-              setEndLocation(null);
-              setStartAddress("");
-              setEndAddress("");
-              // Reset to default time (5 minutes from now)
-              const defaultTime = new Date();
-              defaultTime.setMinutes(defaultTime.getMinutes() + 5);
-              defaultTime.setSeconds(0);
-              defaultTime.setMilliseconds(0);
-              setTimePart(defaultTime);
-              applySchedule(datePart, defaultTime);
-            },
-          },
-        ]
-      );
+        },
+      ]);
     } catch (error) {
       console.error("Create shared ride error:", error);
       let errorMessage = "Không thể tạo chuyến đi. Vui lòng thử lại.";
