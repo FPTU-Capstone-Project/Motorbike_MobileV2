@@ -7,6 +7,7 @@ import { PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { View, ActivityIndicator, Platform, StyleSheet, TouchableOpacity } from 'react-native';
+import { BlurView } from 'expo-blur';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { colors } from './src/theme/designTokens';
 import authService from './src/services/authService';
@@ -94,56 +95,75 @@ const CustomTabBar = ({ state, descriptors, navigation, insets }) => {
       style={{
         position: 'absolute',
         bottom: bottomOffset + bottomSafe,
-        left: 16,
-        right: 16,
+        left: '50%',
+        marginLeft: -120, // Giảm chiều dài menu bar (từ full width xuống ~240px)
+        width: 240,
         height: baseHeight,
         borderRadius: 24,
-        backgroundColor: '#FFFFFF',
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-around',
-        paddingHorizontal: 8,
-        elevation: 8,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 12,
         overflow: 'hidden',
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 0 }, // Shadow đều ở tất cả các cạnh
+        shadowOpacity: 0.05, // Giảm độ đậm shadow
+        shadowRadius: 20, // Tăng radius để shadow mềm và đều hơn
       }}
     >
-      {state.routes.map((route, index) => {
-        const { options } = descriptors[route.key];
-        const isFocused = state.index === index;
+      <BlurView
+        intensity={80}
+        tint="light"
+        style={StyleSheet.absoluteFillObject}
+      >
+        <View
+          style={{
+            ...StyleSheet.absoluteFillObject,
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            borderRadius: 24,
+          }}
+        />
+      </BlurView>
+      <View
+        style={{
+          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-around',
+          paddingHorizontal: 12, // Giảm padding để icon gần nhau hơn
+        }}
+      >
+        {state.routes.map((route, index) => {
+          const { options } = descriptors[route.key];
+          const isFocused = state.index === index;
 
-        const onPress = () => {
-          const event = navigation.emit({
-            type: 'tabPress',
-            target: route.key,
-            canPreventDefault: true,
-          });
+          const onPress = () => {
+            const event = navigation.emit({
+              type: 'tabPress',
+              target: route.key,
+              canPreventDefault: true,
+            });
 
-          if (!isFocused && !event.defaultPrevented) {
-            navigation.navigate(route.name);
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name);
+            }
+          };
+
+          let iconName = 'home';
+          if (route.name === 'Wallet') {
+            iconName = 'account-balance-wallet';
+          } else if (route.name === 'History') {
+            iconName = 'history';
+          } else if (route.name === 'Profile') {
+            iconName = 'person';
           }
-        };
 
-        let iconName = 'home';
-        if (route.name === 'Wallet') {
-          iconName = 'account-balance-wallet';
-        } else if (route.name === 'History') {
-          iconName = 'history';
-        } else if (route.name === 'Profile') {
-          iconName = 'person';
-        }
-
-        return (
-          <View
-            key={route.key}
-            style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
-          >
+          return (
             <TouchableOpacity
+              key={route.key}
               onPress={onPress}
-              style={{ alignItems: 'center', justifyContent: 'center' }}
+              style={{
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingHorizontal: 8, // Giảm khoảng cách giữa các icon
+              }}
               activeOpacity={0.7}
             >
               <Icon
@@ -163,9 +183,9 @@ const CustomTabBar = ({ state, descriptors, navigation, insets }) => {
                 />
               )}
             </TouchableOpacity>
-          </View>
-        );
-      })}
+          );
+        })}
+      </View>
     </View>
   );
 };
