@@ -85,14 +85,14 @@ const ProfileScreen = ({ navigation }) => {
   };
 
   const menuItems = [
-    { icon: 'swap-horiz', title: 'Chuyển đổi chế độ', onPress: () => navigation.navigate('ProfileSwitch') },
+    { icon: 'swap-horiz', title: 'Chuyển đổi chế độ', onPress: () => navigation.navigate('SwitchMode') },
     { icon: 'edit', title: 'Chỉnh sửa thông tin', onPress: () => navigation.navigate('EditProfile') },
     { icon: 'security', title: 'Đổi mật khẩu', onPress: () => navigation.navigate('ChangePassword') },
     {
       icon: 'verified',
       title: 'Xác minh tài khoản',
       onPress: () => {
-        navigation.navigate('ProfileSwitch');
+        navigation.navigate('AccountVerification');
       },
     },
     { icon: 'help', title: 'Trợ giúp & Hỗ trợ', onPress: () => Alert.alert('Thông báo', 'Chức năng đang phát triển') },

@@ -110,7 +110,7 @@ export const ENDPOINTS = {
     UPDATE_PROFILE: "/users/me",
     UPDATE_PASSWORD: "/users/me/update-password",
     UPDATE_AVATAR: "/users/avatar",
-    SWITCH_PROFILE: "/users/me/switch-profile",
+    SWITCH_PROFILE: "/me/switch-profile",
     ALL_USERS: "/users/all",
   },
 
