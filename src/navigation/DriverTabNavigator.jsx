@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 import DriverHomeScreen from '../screens/driver/DriverHomeScreen.jsx';
-import DriverEarningsScreen from '../screens/driver/DriverEarningsScreen.jsx';
+import DriverRideHistoryScreen from '../screens/driver/DriverRideHistoryScreen.jsx';
 import DriverRatingsScreen from '../screens/driver/DriverRatingsScreen.jsx';
 import DriverProfileScreen from '../screens/driver/DriverProfileScreen.jsx';
 
@@ -24,8 +24,8 @@ const DriverTabNavigator = () => {
           
           if (route.name === 'DriverHome') {
             iconName = 'home';
-          } else if (route.name === 'Earnings') {
-            iconName = 'attach-money';
+          } else if (route.name === 'DriverRideHistory') {
+            iconName = 'history';
           } else if (route.name === 'Ratings') {
             iconName = 'star';
           } else if (route.name === 'DriverProfile') {
@@ -58,9 +58,9 @@ const DriverTabNavigator = () => {
         options={{ tabBarLabel: 'Trang chủ' }}
       />
       <Tab.Screen 
-        name="Earnings" 
-        component={DriverEarningsScreen}
-        options={{ tabBarLabel: 'Thu nhập' }}
+        name="DriverRideHistory" 
+        component={DriverRideHistoryScreen}
+        options={{ tabBarLabel: 'Lịch sử' }}
       />
       <Tab.Screen 
         name="Ratings" 

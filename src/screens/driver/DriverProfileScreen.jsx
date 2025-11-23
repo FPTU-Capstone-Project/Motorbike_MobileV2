@@ -122,7 +122,6 @@ const DriverProfileScreen = ({ navigation }) => {
     {
       title: 'Chuyến đi',
       items: [
-        { icon: 'history', title: 'Lịch sử chuyến đi', onPress: () => navigation.navigate('DriverRideHistory') },
         { icon: 'star', title: 'Đánh giá của tôi', onPress: () => navigation.navigate('DriverRatings') }
       ]
     },
