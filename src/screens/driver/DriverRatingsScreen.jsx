@@ -6,6 +6,7 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -14,13 +15,11 @@ import * as Animatable from 'react-native-animatable';
 
 import AppBackground from '../../components/layout/AppBackground.jsx';
 import CleanCard from '../../components/ui/CleanCard.jsx';
-import { SoftBackHeader } from '../../components/ui/GlassHeader.jsx';
+import GlassHeader from '../../components/ui/GlassHeader.jsx';
 import { colors, typography, spacing } from '../../theme/designTokens';
 import ratingService from '../../services/ratingService';
-import useSoftHeaderSpacing from '../../hooks/useSoftHeaderSpacing.js';
 
 const DriverRatingsScreen = ({ navigation }) => {
-  const { headerOffset, contentPaddingTop } = useSoftHeaderSpacing({ contentExtra: 28 });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [ratings, setRatings] = useState([]);
@@ -122,12 +121,10 @@ const DriverRatingsScreen = ({ navigation }) => {
     return (
       <AppBackground>
         <SafeAreaView style={styles.safe}>
-          <SoftBackHeader
-            floating
-            topOffset={headerOffset}
-            title="Đánh giá của tôi"
-            onBackPress={() => navigation.goBack()}
-          />
+          <StatusBar barStyle="dark-content" />
+          <View style={styles.headerSpacing}>
+            <GlassHeader title="Đánh giá của tôi" />
+          </View>
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={colors.primary} />
             <Text style={styles.loadingText}>Đang tải đánh giá...</Text>
@@ -140,16 +137,10 @@ const DriverRatingsScreen = ({ navigation }) => {
   return (
     <AppBackground>
       <SafeAreaView style={styles.safe}>
-        <SoftBackHeader
-          floating
-          topOffset={headerOffset}
-          title="Đánh giá của tôi"
-          onBackPress={() => navigation.goBack()}
-        />
-
+        <StatusBar barStyle="dark-content" />
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={[styles.scrollContent, { paddingTop: contentPaddingTop }]}
+          contentContainerStyle={styles.scrollContent}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -158,9 +149,13 @@ const DriverRatingsScreen = ({ navigation }) => {
             />
           }
         >
+          <View style={styles.headerSpacing}>
+            <GlassHeader title="Đánh giá của tôi" />
+          </View>
+
           {/* Overall Rating Card */}
           <Animatable.View animation="fadeInUp" duration={400} delay={60}>
-            <CleanCard contentStyle={styles.overallCard}>
+            <CleanCard style={styles.cardSpacing} contentStyle={styles.overallCard}>
               <View style={styles.overallHeader}>
                 <View style={styles.ratingMain}>
                   <Text style={styles.overallRating}>{stats.overall || '0.0'}</Text>
@@ -201,13 +196,15 @@ const DriverRatingsScreen = ({ navigation }) => {
 
           {/* Reviews List */}
           <View style={styles.reviewsSection}>
-            <Text style={styles.sectionTitle}>
-              Nhận xét từ khách hàng ({stats.total})
-            </Text>
+            <View style={styles.sectionTitleContainer}>
+              <Text style={styles.sectionTitle}>
+                Nhận xét từ khách hàng ({stats.total})
+              </Text>
+            </View>
 
             {ratings.length === 0 ? (
               <Animatable.View animation="fadeInUp" duration={400} delay={120}>
-                <CleanCard contentStyle={styles.emptyCard}>
+                <CleanCard style={styles.cardSpacing} contentStyle={styles.emptyCard}>
                   <View style={styles.emptyState}>
                     <Feather name="message-circle" size={48} color={colors.textMuted} />
                     <Text style={styles.emptyText}>Chưa có đánh giá nào</Text>
@@ -231,7 +228,7 @@ const DriverRatingsScreen = ({ navigation }) => {
                     duration={400}
                     delay={120 + index * 50}
                   >
-                    <CleanCard contentStyle={styles.reviewCard}>
+                    <CleanCard style={styles.cardSpacing} contentStyle={styles.reviewCard}>
                       <View style={styles.reviewHeader}>
                         <View style={styles.reviewerInfo}>
                           <View style={styles.reviewerAvatar}>
@@ -284,9 +281,15 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   scrollContent: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.xl * 2,
-    gap: spacing.lg,
+    paddingTop: 24,
+    paddingBottom: 140,
+  },
+  headerSpacing: {
+    marginBottom: 24,
+  },
+  cardSpacing: {
+    marginHorizontal: 20,
+    marginBottom: 20,
   },
   overallCard: {
     padding: spacing.lg,
@@ -367,13 +370,16 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   reviewsSection: {
-    gap: spacing.md,
+    marginTop: 0,
+  },
+  sectionTitleContainer: {
+    marginHorizontal: 20,
+    marginBottom: 12,
   },
   sectionTitle: {
     fontSize: typography.subheading,
     fontFamily: 'Inter_700Bold',
     color: colors.textPrimary,
-    paddingHorizontal: spacing.xs,
   },
   emptyCard: {
     padding: spacing.xl * 2,

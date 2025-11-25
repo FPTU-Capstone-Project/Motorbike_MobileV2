@@ -2,75 +2,75 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import { colors } from '../theme/designTokens';
+import CustomTabBar from '../components/CustomTabBar';
 
 import DriverHomeScreen from '../screens/driver/DriverHomeScreen.jsx';
 import DriverRideHistoryScreen from '../screens/driver/DriverRideHistoryScreen.jsx';
 import DriverRatingsScreen from '../screens/driver/DriverRatingsScreen.jsx';
 import DriverProfileScreen from '../screens/driver/DriverProfileScreen.jsx';
+import DriverEarningsScreen from '../screens/driver/DriverEarningsScreen.jsx';
 
 const Tab = createBottomTabNavigator();
 
+// Wrapper component để thêm padding bottom cho các screen
+const withTabBarPadding = (Component) => {
+  return (props) => {
+    return <Component {...props} />;
+  };
+};
+
 const DriverTabNavigator = () => {
   const insets = useSafeAreaInsets();
-  const extraBottomSpace = Math.max(insets.bottom, Platform.OS === 'android' ? 12 : 6);
-  const baseHeight = Platform.OS === 'ios' ? 64 : 56;
 
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName;
-
-          if (route.name === 'DriverHome') {
-            iconName = 'home';
-          } else if (route.name === 'DriverRideHistory') {
-            iconName = 'history';
-          } else if (route.name === 'Ratings') {
-            iconName = 'star';
-          } else if (route.name === 'DriverProfile') {
-            iconName = 'person'; // Profile icon
-          }
-
-          return <Icon name={iconName} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: '#4CAF50',
-        tabBarInactiveTintColor: 'gray',
+      screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          height: baseHeight + extraBottomSpace,
-          paddingBottom: extraBottomSpace,
-          paddingTop: 8,
-          backgroundColor: '#fff',
-          borderTopWidth: 1,
-          borderTopColor: '#E0E0E0',
-          elevation: 8,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 4,
+          display: 'none',
         },
-      })}
+      }}
+      tabBar={(props) => (
+        <CustomTabBar
+          {...props}
+          insets={insets}
+          iconMap={{
+            DriverHome: 'home',
+            DriverEarnings: 'account-balance-wallet',
+            DriverRideHistory: 'history',
+            Ratings: 'star',
+            DriverProfile: 'person',
+          }}
+        />
+      )}
+      sceneContainerStyle={{
+        paddingBottom: 0,
+        backgroundColor: 'transparent',
+      }}
     >
       <Tab.Screen
         name="DriverHome"
-        component={DriverHomeScreen}
+        component={withTabBarPadding(DriverHomeScreen)}
         options={{ tabBarLabel: 'Trang chủ' }}
       />
       <Tab.Screen
+        name="DriverEarnings"
+        component={withTabBarPadding(DriverEarningsScreen)}
+        options={{ tabBarLabel: 'Thu nhập' }}
+      />
+      <Tab.Screen
         name="DriverRideHistory"
-        component={DriverRideHistoryScreen}
+        component={withTabBarPadding(DriverRideHistoryScreen)}
         options={{ tabBarLabel: 'Lịch sử' }}
       />
       <Tab.Screen
         name="Ratings"
-        component={DriverRatingsScreen}
+        component={withTabBarPadding(DriverRatingsScreen)}
         options={{ tabBarLabel: 'Đánh giá' }}
       />
       <Tab.Screen
         name="DriverProfile"
-        component={DriverProfileScreen}
+        component={withTabBarPadding(DriverProfileScreen)}
         options={{ tabBarLabel: 'Hồ sơ' }}
       />
     </Tab.Navigator>
