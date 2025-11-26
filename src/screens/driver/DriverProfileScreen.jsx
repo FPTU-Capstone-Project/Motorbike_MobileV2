@@ -56,19 +56,21 @@ const DriverProfileScreen = ({ navigation }) => {
         const vehiclesData = await vehicleService.getDriverVehicles({ page: 0, size: 10 });
         
         // Extract vehicles from response (could be array or paginated response)
+        let vehiclesList = [];
         if (vehiclesData) {
           if (Array.isArray(vehiclesData)) {
-            setVehicles(vehiclesData);
+            vehiclesList = vehiclesData;
           } else if (vehiclesData.content && Array.isArray(vehiclesData.content)) {
-            setVehicles(vehiclesData.content);
+            vehiclesList = vehiclesData.content;
           } else if (vehiclesData.data && Array.isArray(vehiclesData.data)) {
-            setVehicles(vehiclesData.data);
-          } else {
-            setVehicles([]);
+            vehiclesList = vehiclesData.data;
           }
-        } else {
-          setVehicles([]);
         }
+        
+        // Format vehicles to ensure consistent structure
+        const formattedVehicles = vehicleService.formatVehicles(vehiclesList);
+        console.log('Loaded vehicles:', formattedVehicles);
+        setVehicles(formattedVehicles);
       } catch (vehicleError) {
         // If vehicle loading fails (403, 404, etc.), just set empty array
         console.warn('Could not load vehicles (may not have permission or no vehicles):', vehicleError);
@@ -121,7 +123,13 @@ const DriverProfileScreen = ({ navigation }) => {
   };
 
   const handleVehicleEdit = () => {
-    Alert.alert('Cập nhật thông tin xe', 'Chức năng đang được phát triển');
+    // If vehicle exists, navigate directly to edit screen
+    if (vehicleInfo && vehicleInfo.id) {
+      navigation.navigate('EditVehicle', { vehicleId: vehicleInfo.id });
+    } else {
+      // If no vehicle, navigate to add screen
+      navigation.navigate('AddVehicle');
+    }
   };
 
   const menuSections = [
