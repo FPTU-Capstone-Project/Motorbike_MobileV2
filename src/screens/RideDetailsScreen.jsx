@@ -17,6 +17,7 @@ import CleanCard from '../components/ui/CleanCard';
 import rideService from '../services/rideService';
 import websocketService from '../services/websocketService';
 import { colors } from '../theme/designTokens';
+import { parseBackendDate } from '../utils/time';
 
 const RideDetailsScreen = ({ navigation, route }) => {
   const { rideId } = route?.params || {};
@@ -265,15 +266,17 @@ const RideDetailsScreen = ({ navigation, route }) => {
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Ngay lập tức';
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('vi-VN') + ' lúc ' + date.toLocaleTimeString('vi-VN', {
+    const date = parseBackendDate(dateString);
+    if (!date) return 'Ngay lập tức';
+
+    return (
+      date.toLocaleDateString('vi-VN') +
+      ' lúc ' +
+      date.toLocaleTimeString('vi-VN', {
         hour: '2-digit',
         minute: '2-digit',
-      });
-    } catch (error) {
-      return dateString;
-    }
+      })
+    );
   };
 
   const getStatusColor = (status) => {

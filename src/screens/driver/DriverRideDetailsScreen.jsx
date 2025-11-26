@@ -17,6 +17,7 @@ import GoongMap from '../../components/GoongMap';
 import rideService from '../../services/rideService';
 import goongService from '../../services/goongService';
 import { colors } from '../../theme/designTokens';
+import { parseBackendDate } from '../../utils/time';
 import { SoftBackHeader } from '../../components/ui/GlassHeader.jsx';
 
 const DriverRideDetailsScreen = ({ navigation, route }) => {
@@ -73,30 +74,26 @@ const DriverRideDetailsScreen = ({ navigation, route }) => {
   };
 
   const formatDateTime = (dateTimeString) => {
-    if (!dateTimeString) return 'Ngay lập tức';
+    const date = parseBackendDate(dateTimeString);
+    if (!date) return 'Ngay lập tức';
     
-    try {
-      const date = new Date(dateTimeString);
-      const now = new Date();
-      const diffMs = date - now;
-      const diffMins = Math.floor(diffMs / 60000);
-      
-      if (diffMins < 0) return 'Đã qua';
-      if (diffMins < 60) return `Trong ${diffMins} phút`;
-      
-      const diffHours = Math.floor(diffMins / 60);
-      if (diffHours < 24) return `Trong ${diffHours} giờ`;
-      
-      return date.toLocaleDateString('vi-VN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } catch (error) {
-      return dateTimeString;
-    }
+    const now = new Date();
+    const diffMs = date.getTime() - now.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 0) return 'Đã qua';
+    if (diffMins < 60) return `Trong ${diffMins} phút`;
+    
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `Trong ${diffHours} giờ`;
+    
+    return date.toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   const formatCurrency = (amount) => {

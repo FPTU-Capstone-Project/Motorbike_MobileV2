@@ -178,35 +178,7 @@ const ProfileScreen = ({ navigation }) => {
             </CleanCard>
           </Animatable.View>
 
-          <Animatable.View animation="fadeInUp" duration={480} delay={80}>
-            <CleanCard style={styles.cardSpacing} contentStyle={styles.statsCardContent}>
-              <Text style={styles.statsTitle}>Thống kê</Text>
-              <View style={styles.statsContainer}>
-                <View style={styles.statItem}>
-                  <Text style={styles.statNumber}>
-                    {user.rider_profile?.total_rides || user.driver_profile?.total_shared_rides || 0}
-                  </Text>
-                  <Text style={styles.statLabel}>Chuyến đi</Text>
-                </View>
-                <View style={styles.statDivider} />
-                <View style={styles.statItem}>
-                  <Text style={styles.statNumber}>
-                    {user.wallet?.cached_balance
-                      ? `${parseFloat(user.wallet.cached_balance).toLocaleString()}đ`
-                      : '0đ'}
-                  </Text>
-                  <Text style={styles.statLabel}>Số dư ví</Text>
-                </View>
-                <View style={styles.statDivider} />
-                <View style={styles.statItem}>
-                  <Text style={styles.statNumber}>
-                    {user.rider_profile?.rating_avg || user.driver_profile?.rating_avg || '0.0'}
-                  </Text>
-                  <Text style={styles.statLabel}>Đánh giá</Text>
-                </View>
-              </View>
-            </CleanCard>
-          </Animatable.View>
+          
 
           <Animatable.View animation="fadeInUp" duration={480} delay={140}>
             <CleanCard style={styles.cardSpacing} contentStyle={styles.menuContent}>
