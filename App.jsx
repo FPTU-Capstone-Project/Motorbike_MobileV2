@@ -107,7 +107,7 @@ function MainTabs() {
           {...props}
           insets={insets}
           iconMap={{
-            Home: 'two-wheeler',
+            Home: 'home',
             History: 'history',
             Profile: 'person',
           }}
@@ -118,9 +118,21 @@ function MainTabs() {
         backgroundColor: 'transparent',
       }}
     >
-      <Tab.Screen name="Home" component={withTabBarPadding(HomeScreen)} />
-      <Tab.Screen name="History" component={withTabBarPadding(RideHistoryScreen)} />
-      <Tab.Screen name="Profile" component={withTabBarPadding(ProfileScreen)} />
+      <Tab.Screen
+        name="Home"
+        component={withTabBarPadding(HomeScreen)}
+        options={{ tabBarLabel: 'Trang chủ' }}
+      />
+      <Tab.Screen
+        name="History"
+        component={withTabBarPadding(RideHistoryScreen)}
+        options={{ tabBarLabel: 'Lịch sử' }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={withTabBarPadding(ProfileScreen)}
+        options={{ tabBarLabel: 'Hồ sơ' }}
+      />
     </Tab.Navigator>
   );
 }

@@ -31,6 +31,9 @@ import GoongMap from '../../components/GoongMap.jsx';
 import addressValidation from '../../utils/addressValidation';
 
 const { width, height } = Dimensions.get('window');
+const LABEL_BASE_FARE = 'Cước cố định';
+const LABEL_DISCOUNT = 'Giảm giá';
+const LABEL_TOTAL = 'Tổng cộng';
 
 const RideBookingScreen = ({ navigation, route }) => {
   // Location states
@@ -146,6 +149,16 @@ const RideBookingScreen = ({ navigation, route }) => {
       minimumFractionDigits: 1,
       maximumFractionDigits: 1,
     });
+  }, []);
+  const formatCurrency = React.useCallback((value) => {
+    if (value === null || value === undefined) {
+      return '0';
+    }
+    const numericValue = Number(value);
+    if (Number.isNaN(numericValue)) {
+      return '0';
+    }
+    return numericValue.toLocaleString('vi-VN');
   }, []);
 
   useEffect(() => {
@@ -1155,25 +1168,21 @@ const RideBookingScreen = ({ navigation, route }) => {
                   </View> */}
                   
                   <View style={styles.quoteRow}>
-                    <Text style={styles.quoteLabel}>Cước cố định:</Text>
-                    <Text style={styles.quoteValue}>
-                      {quote?.tierSubtotal?.toLocaleString('vi-VN')} đ
-                    </Text>
+                    <Text style={styles.quoteLabel}>{LABEL_BASE_FARE}:</Text>
+                    <Text style={styles.quoteValue}>{formatCurrency(quote?.tierSubtotal)} đ</Text>
                   </View>
                   
                   <View style={styles.quoteRow}>
-                    <Text style={styles.quoteLabel}>Giảm giá:</Text>
-                    <Text style={styles.quoteValue}>
-                      {quote?.tierDiscount?.toLocaleString('vi-VN')} đ
-                    </Text>
+                    <Text style={styles.quoteLabel}>{LABEL_DISCOUNT}:</Text>
+                    <Text style={styles.quoteValue}>{formatCurrency(quote?.tierDiscount)} đ</Text>
                   </View>
                 </View>
                 
                 <View style={styles.quoteDivider} />
                 
                 <View style={styles.quoteRow}>
-                  <Text style={styles.quoteTotalLabel}>Tổng cộng:</Text>
-                  <Text style={styles.quoteTotalValue}>{quote?.totalFare?.toLocaleString()} đ</Text>
+                  <Text style={styles.quoteTotalLabel}>{LABEL_TOTAL}:</Text>
+                  <Text style={styles.quoteTotalValue}>{formatCurrency(quote?.totalFare)} đ</Text>
                 </View>
                 
                 {/* Expiry Info */}

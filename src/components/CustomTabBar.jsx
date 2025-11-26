@@ -1,154 +1,70 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Animated, Platform } from 'react-native';
-import { BlurView } from 'expo-blur';
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Animated,
+  Platform,
+  Text,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors } from '../theme/designTokens';
 
-// Tab Icon Component với outline icons và animation
-const TabIcon = ({ iconName, isFocused, onPress }) => {
-  const scaleAnim = React.useRef(new Animated.Value(isFocused ? 1.1 : 1)).current;
+// Friendlier, full-width bottom nav similar to common ride-hailing apps
+const TabIcon = ({ iconName, label, isFocused, onPress }) => {
+  const scaleAnim = React.useRef(new Animated.Value(isFocused ? 1.05 : 1)).current;
 
   React.useEffect(() => {
     Animated.spring(scaleAnim, {
-      toValue: isFocused ? 1.2 : 1,
-      tension: 300,
-      friction: 10,
+      toValue: isFocused ? 1.08 : 1,
+      tension: 280,
+      friction: 18,
       useNativeDriver: true,
     }).start();
   }, [isFocused, scaleAnim]);
 
-  // Icon mapping: some icons don't have outline versions
-  const iconMap = {
-    'two-wheeler': {
-      active: 'two-wheeler',
-      inactive: 'two-wheeler', // No outline version, will use opacity
-    },
-    'account-balance-wallet': {
-      active: 'account-balance-wallet',
-      inactive: 'account-balance-wallet', // Use same icon with opacity
-    },
-    'history': {
-      active: 'history',
-      inactive: 'history', // No outline version, will use opacity
-    },
-    'person': {
-      active: 'person',
-      inactive: 'person-outline',
-    },
-    'home': {
-      active: 'home',
-      inactive: 'home',
-    },
-    'star': {
-      active: 'star',
-      inactive: 'star-outline',
-    },
-  };
-
-  const iconConfig = iconMap[iconName] || {
-    active: iconName,
-    inactive: iconName.includes('-outline') ? iconName : `${iconName}-outline`,
-  };
-
-  const finalIconName = isFocused ? iconConfig.active : iconConfig.inactive;
-  const iconOpacity = isFocused ? 1 : 0.6; // Lower opacity for inactive icons without outline
+  const activeColor = colors.primary;
+  const inactiveColor = colors.textMuted;
 
   return (
     <TouchableOpacity
       onPress={onPress}
-      style={{
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 8,
-        paddingHorizontal: 0,
-      }}
-      activeOpacity={0.7}
+      style={styles.tabItem}
+      activeOpacity={0.85}
+      hitSlop={{ top: 8, bottom: 8, left: 12, right: 12 }}
     >
       <Animated.View
-        style={{
-          transform: [{ scale: scaleAnim }],
-          alignItems: 'center',
-          justifyContent: 'center',
-          opacity: iconOpacity,
-          width: 44,
-          height: 44,
-        }}
+        style={[
+          styles.tabButton,
+          isFocused && styles.tabButtonActive,
+          { transform: [{ scale: scaleAnim }] },
+        ]}
       >
         <Icon
-          name={finalIconName}
-          size={28}
-          color={isFocused ? '#FFFFFF' : '#9CA3AF'}
+          name={iconName}
+          size={24}
+          color={isFocused ? activeColor : inactiveColor}
         />
+        <Text
+          style={[
+            styles.tabLabel,
+            isFocused ? styles.tabLabelActive : null,
+          ]}
+          numberOfLines={1}
+        >
+          {label}
+        </Text>
       </Animated.View>
     </TouchableOpacity>
   );
 };
 
-// Custom Tab Bar Component với icon design được cải thiện
 const CustomTabBar = ({ state, descriptors, navigation, insets, iconMap }) => {
-  const bottomSafe = Math.max(insets.bottom, Platform.OS === 'android' ? 12 : 6);
-  const baseHeight = Platform.OS === 'ios' ? 64 : 56;
-  const bottomOffset = 16;
-  
-  // Dynamic width based on number of tabs
-  const tabCount = state.routes.length;
-  const tabBarWidth = tabCount === 5 ? 300 : 240;
-  const tabBarMarginLeft = tabCount === 5 ? -150 : -120;
+  const bottomSafe = Math.max(insets?.bottom || 0, Platform.OS === 'android' ? 10 : 6);
 
   return (
-    <View
-      style={{
-        position: 'absolute',
-        bottom: bottomOffset + bottomSafe,
-        left: '50%',
-        marginLeft: tabBarMarginLeft,
-        width: tabBarWidth,
-        height: baseHeight,
-        borderRadius: 24,
-        backgroundColor: 'transparent',
-        // Shadow depth (neumorphism style - giống CleanCard)
-        shadowColor: 'rgba(163, 177, 198, 0.65)',
-        shadowOpacity: 0.32,
-        shadowRadius: 18,
-        shadowOffset: { width: 8, height: 10 },
-        ...Platform.select({
-          android: {
-            elevation: 6,
-          },
-        }),
-      }}
-    >
-      <View
-        style={{
-          ...StyleSheet.absoluteFillObject,
-          borderRadius: 24,
-          overflow: 'hidden',
-        }}
-      >
-        <BlurView
-          intensity={80}
-          tint="dark"
-          style={StyleSheet.absoluteFillObject}
-        >
-          <View
-            style={{
-              ...StyleSheet.absoluteFillObject,
-              backgroundColor: 'rgba(0, 0, 0, 0.9)',
-              borderRadius: 24,
-            }}
-          />
-        </BlurView>
-      </View>
-      <View
-        style={{
-          flex: 1,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          paddingHorizontal: 0,
-        }}
-      >
+    <View style={[styles.container, { paddingBottom: bottomSafe }]}>
+      <View style={styles.bar}>
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
           const isFocused = state.index === index;
@@ -165,13 +81,19 @@ const CustomTabBar = ({ state, descriptors, navigation, insets, iconMap }) => {
             }
           };
 
-          // Use provided iconMap or default to route name based mapping
-          let iconName = iconMap?.[route.name] || 'two-wheeler';
+          const iconName = iconMap?.[route.name] || 'two-wheeler';
+          const label =
+            options.tabBarLabel !== undefined
+              ? options.tabBarLabel
+              : options.title !== undefined
+              ? options.title
+              : route.name;
 
           return (
             <TabIcon
               key={route.key}
               iconName={iconName}
+              label={label}
               isFocused={isFocused}
               onPress={onPress}
             />
@@ -181,6 +103,59 @@ const CustomTabBar = ({ state, descriptors, navigation, insets, iconMap }) => {
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 16,
+    backgroundColor: 'transparent',
+  },
+  bar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    borderRadius: 22,
+    height: 68,
+    paddingHorizontal: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    shadowColor: 'rgba(17, 24, 39, 0.18)',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 18,
+    ...Platform.select({
+      android: {
+        elevation: 10,
+      },
+    }),
+  },
+  tabItem: {
+    flex: 1,
+  },
+  tabButton: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    borderRadius: 14,
+  },
+  tabButtonActive: {
+    backgroundColor: 'rgba(59, 130, 246, 0.12)',
+  },
+  tabLabel: {
+    marginTop: 4,
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textMuted,
+  },
+  tabLabelActive: {
+    color: colors.primary,
+  },
+});
 
 export default CustomTabBar;
 
