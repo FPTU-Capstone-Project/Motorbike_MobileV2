@@ -20,6 +20,7 @@ import ResetPasswordScreen from './src/screens/auth/ResetPasswordScreen.jsx';
 
 // Rider Screens
 import HomeScreen from './src/screens/main/HomeScreen.jsx';
+import WalletScreen from './src/screens/main/WalletScreen.jsx';
 import ProfileScreen from './src/screens/main/ProfileScreen.jsx';
 import RideHistoryScreen from './src/screens/main/RideHistoryScreen.jsx';
 import RideDetailsScreen from './src/screens/RideDetailsScreen.jsx';
@@ -112,6 +113,7 @@ function MainTabs() {
           insets={insets}
           iconMap={{
             Home: 'home',
+            Wallet: 'account-balance-wallet',
             History: 'history',
             Profile: 'person',
           }}
@@ -126,6 +128,11 @@ function MainTabs() {
         name="Home"
         component={withTabBarPadding(HomeScreen)}
         options={{ tabBarLabel: 'Trang chủ' }}
+      />
+      <Tab.Screen
+        name="Wallet"
+        component={withTabBarPadding(WalletScreen)}
+        options={{ tabBarLabel: 'Ví tiền' }}
       />
       <Tab.Screen
         name="History"
