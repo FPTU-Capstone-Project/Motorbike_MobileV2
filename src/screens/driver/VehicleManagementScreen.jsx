@@ -10,6 +10,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -20,9 +21,12 @@ const VehicleManagementScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    loadVehicles();
-  }, []);
+  // Load vehicles when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      loadVehicles();
+    }, [])
+  );
 
   const loadVehicles = async (isRefresh = false) => {
     try {
@@ -35,12 +39,21 @@ const VehicleManagementScreen = ({ navigation }) => {
         sortDir: 'desc'
       });
 
-      if (response && response.data) {
-        const formattedVehicles = vehicleService.formatVehicles(response.data);
-        setVehicles(formattedVehicles);
-      } else {
-        setVehicles([]);
+      // Extract vehicles from response (could be array or paginated response)
+      let vehiclesList = [];
+      if (response) {
+        if (Array.isArray(response)) {
+          vehiclesList = response;
+        } else if (response.data && Array.isArray(response.data)) {
+          vehiclesList = response.data;
+        } else if (response.content && Array.isArray(response.content)) {
+          vehiclesList = response.content;
+        }
       }
+      
+      // Only show first vehicle (1 vehicle per driver limit)
+      const formattedVehicles = vehicleService.formatVehicles(vehiclesList);
+      setVehicles(formattedVehicles.slice(0, 1));
     } catch (error) {
       console.error('Error loading vehicles:', error);
       Alert.alert('Lỗi', 'Không thể tải danh sách phương tiện');
@@ -117,8 +130,7 @@ const VehicleManagementScreen = ({ navigation }) => {
         <TouchableOpacity
           style={styles.actionButton}
           onPress={() => {
-            // TODO: Navigate to edit vehicle screen
-            Alert.alert('Thông báo', 'Chức năng chỉnh sửa sẽ được cập nhật sớm');
+            navigation.navigate('EditVehicle', { vehicleId: vehicle.id });
           }}
         >
           <Icon name="edit" size={18} color="#2196F3" />
@@ -143,16 +155,17 @@ const VehicleManagementScreen = ({ navigation }) => {
       <Text style={styles.emptyDescription}>
         Thêm phương tiện để bắt đầu tạo chuyến đi chia sẻ
       </Text>
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={() => {
-          // TODO: Navigate to add vehicle screen
-          Alert.alert('Thông báo', 'Chức năng thêm phương tiện sẽ được cập nhật sớm');
-        }}
-      >
-        <Icon name="add" size={20} color="#fff" />
-        <Text style={styles.addButtonText}>Thêm phương tiện</Text>
-      </TouchableOpacity>
+      {vehicles.length === 0 && (
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => {
+            navigation.navigate('AddVehicle');
+          }}
+        >
+          <Icon name="add" size={20} color="#fff" />
+          <Text style={styles.addButtonText}>Thêm phương tiện</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 
@@ -189,15 +202,17 @@ const VehicleManagementScreen = ({ navigation }) => {
           <Icon name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Quản lý phương tiện</Text>
-        <TouchableOpacity
-          style={styles.addHeaderButton}
-          onPress={() => {
-            // TODO: Navigate to add vehicle screen
-            Alert.alert('Thông báo', 'Chức năng thêm phương tiện sẽ được cập nhật sớm');
-          }}
-        >
-          <Icon name="add" size={24} color="#4CAF50" />
-        </TouchableOpacity>
+        {vehicles.length === 0 && (
+          <TouchableOpacity
+            style={styles.addHeaderButton}
+            onPress={() => {
+              navigation.navigate('AddVehicle');
+            }}
+          >
+            <Icon name="add" size={24} color="#4CAF50" />
+          </TouchableOpacity>
+        )}
+        {vehicles.length > 0 && <View style={styles.placeholder} />}
       </View>
 
       {/* Vehicle List */}

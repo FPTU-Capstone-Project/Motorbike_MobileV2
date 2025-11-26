@@ -121,7 +121,13 @@ const DriverProfileScreen = ({ navigation }) => {
   };
 
   const handleVehicleEdit = () => {
-    Alert.alert('Cập nhật thông tin xe', 'Chức năng đang được phát triển');
+    // If vehicle exists, navigate directly to edit screen
+    if (vehicleInfo && vehicleInfo.id) {
+      navigation.navigate('EditVehicle', { vehicleId: vehicleInfo.id });
+    } else {
+      // If no vehicle, navigate to add screen
+      navigation.navigate('AddVehicle');
+    }
   };
 
   const menuSections = [
