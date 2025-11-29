@@ -17,6 +17,8 @@ const DriverLoginScreen = ({ navigation, route }) => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   
   // Update email when route params change
   useEffect(() => {
@@ -33,15 +35,47 @@ const DriverLoginScreen = ({ navigation, route }) => {
     }
   }, [prefillEmail, route?.params?.verifiedEmail]);
 
+  // Clear email error when user starts typing
+  const handleEmailChange = (text) => {
+    setEmail(text);
+    if (emailError) {
+      setEmailError('');
+    }
+  };
+  
+  // Clear password error when user starts typing
+  const handlePasswordChange = (text) => {
+    setPassword(text);
+    if (passwordError) {
+      setPasswordError('');
+    }
+  };
+
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ thông tin');
+    const trimmedEmail = email.trim();
+    let hasError = false;
+
+    if (!trimmedEmail) {
+      setEmailError('Vui lòng nhập email');
+      hasError = true;
+    }
+
+    if (!password) {
+      setPasswordError('Vui lòng nhập mật khẩu');
+      hasError = true;
+    }
+
+    if (hasError) {
       return;
     }
 
+    // Clear previous errors
+    setEmailError('');
+    setPasswordError('');
+
     setLoading(true);
     try {
-      const result = await authService.login(email, password, 'driver');
+      const result = await authService.login(trimmedEmail, password, 'driver');
       if (result.success) {
         // After email verification, user should have profile and can login
         // Phone verification is separate and not required for login
@@ -57,35 +91,59 @@ const DriverLoginScreen = ({ navigation, route }) => {
           error.data?.error?.id === "user.validation.profile-not-exists") {
         // Automatically navigate to OTP verification screen for email verification
         navigation.navigate('OTPVerification', {
-          email: email,
+          email: trimmedEmail,
           purpose: 'VERIFY_EMAIL',
           fromLogin: true, // Flag to indicate coming from login
         });
         return;
       }
       
-      let errorMessage = 'Đã có lỗi xảy ra';
+      // Check if error is "user not found" - show inline error instead of Alert
+      const errorMessage = error.message || '';
+      const isUserNotFound = errorMessage.includes('Không tìm thấy người dùng') || 
+                            errorMessage.includes('không tìm thấy người dùng') ||
+                            errorMessage.includes('User not found') ||
+                            errorMessage.includes('user not found') ||
+                            (error instanceof ApiError && error.status === 404);
+      
+      if (isUserNotFound) {
+        setEmailError('Tên tài khoản không tồn tại');
+        setLoading(false);
+        return;
+      }
+      
+      const isWrongPassword = (error instanceof ApiError && error.status === 401) ||
+                              errorMessage.includes('mật khẩu') ||
+                              errorMessage.toLowerCase().includes('password');
+      if (isWrongPassword) {
+        setPasswordError('Mật khẩu không chính xác');
+        setLoading(false);
+        return;
+      }
+      
+      // For other errors, show Alert as before
+      let displayMessage = 'Đã có lỗi xảy ra';
       if (error instanceof ApiError) {
         // Handle session expired from auto token refresh
         if (error.data?.requiresLogin) {
-          errorMessage = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
+          displayMessage = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
         } else {
           switch (error.status) {
             case 401:
-              errorMessage = 'Email hoặc mật khẩu không chính xác'; 
+              displayMessage = 'Email hoặc mật khẩu không chính xác'; 
               break;
             case 400:
-              errorMessage = error.message || 'Thông tin không hợp lệ'; 
+              displayMessage = error.message || 'Thông tin không hợp lệ'; 
               break;
             case 0:
-              errorMessage = 'Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.'; 
+              displayMessage = 'Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.'; 
               break;
             default:
-              errorMessage = error.message || errorMessage;
+              displayMessage = error.message || displayMessage;
           }
         }
       }
-      Alert.alert('Đăng nhập thất bại', errorMessage);
+      Alert.alert('Đăng nhập thất bại', displayMessage);
     } finally {
       setLoading(false);
     }
@@ -113,35 +171,61 @@ const DriverLoginScreen = ({ navigation, route }) => {
             </Animatable.View>
 
             <CleanCard style={styles.formCard} contentStyle={styles.formContent}>
-              <View style={styles.inputWrap}>
-                <Icon name="email" size={20} color={colors.textSecondary} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Nhập email"
-                  placeholderTextColor="rgba(148,163,184,0.9)"
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  returnKeyType="next"
-                />
+              <View style={styles.fieldGroup}>
+                <View style={[
+                  styles.inputWrap,
+                  emailError && styles.inputWrapError
+                ]}>
+                  <Icon 
+                    name="email" 
+                    size={20} 
+                    color={emailError ? '#EF4444' : colors.textSecondary} 
+                    style={styles.inputIcon} 
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Nhập email"
+                    placeholderTextColor="rgba(148,163,184,0.9)"
+                    value={email}
+                    onChangeText={handleEmailChange}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    returnKeyType="next"
+                  />
+                </View>
+                <Text style={[styles.errorText, !emailError && styles.errorTextHidden]}>
+                  {emailError || 'placeholder'}
+                </Text>
               </View>
 
-              <View style={styles.inputWrap}>
-                <Icon name="lock" size={20} color={colors.textSecondary} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Nhập mật khẩu"
-                  placeholderTextColor="rgba(148,163,184,0.9)"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  returnKeyType="done"
-                  onSubmitEditing={handleLogin}
-                />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eye}>
-                  <Icon name={showPassword ? 'visibility' : 'visibility-off'} size={20} color={colors.textSecondary} />
-                </TouchableOpacity>
+              <View style={styles.fieldGroup}>
+                <View style={[
+                  styles.inputWrap,
+                  passwordError && styles.inputWrapError
+                ]}>
+                  <Icon 
+                    name="lock" 
+                    size={20} 
+                    color={passwordError ? '#EF4444' : colors.textSecondary} 
+                    style={styles.inputIcon} 
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Nhập mật khẩu"
+                    placeholderTextColor="rgba(148,163,184,0.9)"
+                    value={password}
+                    onChangeText={handlePasswordChange}
+                    secureTextEntry={!showPassword}
+                    returnKeyType="done"
+                    onSubmitEditing={handleLogin}
+                  />
+                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eye}>
+                    <Icon name={showPassword ? 'visibility' : 'visibility-off'} size={20} color={passwordError ? '#EF4444' : colors.textSecondary} />
+                  </TouchableOpacity>
+                </View>
+                <Text style={[styles.errorText, !passwordError && styles.errorTextHidden]}>
+                  {passwordError || 'placeholder'}
+                </Text>
               </View>
 
               <TouchableOpacity style={styles.forgotPassword} onPress={() => navigation.navigate('ResetPassword')}>
@@ -165,7 +249,7 @@ const DriverLoginScreen = ({ navigation, route }) => {
             <View style={styles.switchProfile}>
               <Text style={styles.switchProfileText}>Bạn là hành khách?</Text>
               <TouchableOpacity onPress={() => navigation.replace('Login')}>
-                <Text style={styles.switchProfileLink}>Đăng nhập với tư cách Rider</Text>
+                <Text style={styles.switchProfileLink}>Đăng nhập với tư cách Hành khách</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -214,6 +298,9 @@ const styles = StyleSheet.create({
     paddingVertical: 28,
     paddingHorizontal: 20,
   },
+  fieldGroup: {
+    marginBottom: 10,
+  },
   inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -223,7 +310,21 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     height: 54,
     paddingHorizontal: 16,
-    marginBottom: 14,
+  },
+  inputWrapError: {
+    borderColor: '#EF4444',
+    borderWidth: 2,
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 13,
+    fontFamily: 'Inter_500Medium',
+    marginLeft: 16,
+    marginTop: 3,
+    minHeight: 12,
+  },
+  errorTextHidden: {
+    opacity: 0,
   },
   inputIcon: { marginRight: 12 },
   input: {
