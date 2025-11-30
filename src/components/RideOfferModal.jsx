@@ -365,26 +365,6 @@ const RideOfferModal = ({
                 </View>
               </View>
             </View>
-
-            {/* Match Score */}
-            {offer.matchScore && (
-              <View style={styles.matchScoreContainer}>
-                <Icon name="trending-up" size={16} color="#4CAF50" />
-                  <Text style={styles.matchScoreText}>
-                    Độ phù hợp: {Math.round(offer.matchScore)}%
-                  </Text>
-              </View>
-            )}
-
-            {/* Proposal Rank */}
-            {/* {offer.proposalRank > 1 && (
-              <View style={styles.rankContainer}>
-                <Icon name="info" size={16} color="#FF9800" />
-                <Text style={styles.rankText}>
-                  Bạn là lựa chọn thứ {offer.proposalRank}
-                </Text>
-              </View>
-            )} */}
           </View>
 
           {/* Actions */}

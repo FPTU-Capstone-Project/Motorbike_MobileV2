@@ -328,9 +328,6 @@ const RegisterScreen = (props) => {
               </View>
               <View style={{ gap: 6 }}>
                 <Text style={styles.heroTitle}>Đăng ký tài khoản</Text>
-                <Text style={styles.heroSubtitle}>
-                  Điền thông tin dưới đây để tạo tài khoản Campus Ride. Một vài bước ngắn để bắt đầu.
-                </Text>
               </View>
             </CleanCard>
 
@@ -350,7 +347,7 @@ const RegisterScreen = (props) => {
               <View style={styles.fieldGroup}>
                 <InputCard
                   icon="mail"
-                  placeholder="Email sinh viên"
+                  placeholder="Email"
                   value={formData.email}
                   onChangeText={(v) => handleInputChange('email', v)}
                   keyboardType="email-address"
