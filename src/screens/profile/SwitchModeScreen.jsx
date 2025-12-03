@@ -272,11 +272,12 @@ const SwitchModeScreen = ({ navigation }) => {
     
     const status = driverProfile.status;
     console.log('🔍 Driver profile status:', status);
-    
-    const isActive = status && status.toUpperCase() === 'ACTIVE';
-    console.log('✅ isDriverProfileActive result:', isActive);
-    
-    return isActive;
+
+    const statusUpper = status ? status.toUpperCase() : null;
+    const isUsable = statusUpper === 'ACTIVE' || statusUpper === 'INACTIVE';
+    console.log('✅ isDriverProfileActive result:', isUsable);
+
+    return isUsable;
   };
 
   // Helper function to get driver profile status message
@@ -288,7 +289,7 @@ const SwitchModeScreen = ({ navigation }) => {
     if (!status) return 'Cần xác minh';
     
     const statusUpper = status.toUpperCase();
-    if (statusUpper === 'ACTIVE') return undefined; // No message if active
+    if (statusUpper === 'ACTIVE' || statusUpper === 'INACTIVE') return undefined; // Switchable
     if (statusUpper === 'PENDING') return 'Đang chờ duyệt';
     if (statusUpper === 'REJECTED') return 'Đã bị từ chối';
     if (statusUpper === 'SUSPENDED') return 'Đã bị tạm ngưng';
@@ -350,9 +351,15 @@ const SwitchModeScreen = ({ navigation }) => {
                 iconColor={colors.accent}
                 active={currentMode === 'driver'}
                 loading={switchLoading === 'driver'}
-                disabled={switchLoading !== null || currentMode === 'driver' || !isDriverProfileActive(user)}
-                disabledMessage={!isDriverProfileActive(user) ? getDriverProfileStatusMessage(user) : undefined}
-                onPress={() => handleSwitchProfile('driver')}
+                disabled={switchLoading !== null || currentMode === 'driver'}
+                disabledMessage={undefined}
+                onPress={() => {
+                  if (!isDriverProfileActive(user)) {
+                    navigation.navigate('DriverVerification');
+                    return;
+                  }
+                  handleSwitchProfile('driver');
+                }}
               />
             </Animatable.View>
           </View>

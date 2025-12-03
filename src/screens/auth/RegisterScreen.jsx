@@ -292,17 +292,22 @@ const RegisterScreen = (props) => {
         phone: formData.phone,
         password: formData.password,
       });
-      // After registration success, navigate to Login screen with pre-filled email
+      // After registration success, direct user to email OTP first, then verification
       Alert.alert(
-        'Đăng ký thành công!', 
-        'Vui lòng đăng nhập bằng tài khoản vừa tạo. Bạn sẽ cần xác minh email trước khi có thể sử dụng ứng dụng.',
+        'Đăng ký thành công!',
+        'Vui lòng xác minh email trước, sau đó gửi giấy tờ sinh viên để dùng ứng dụng.',
         [
-          { 
-            text: 'Đăng nhập ngay', 
-            onPress: () => {
-              // Navigate to Login and pass email to pre-fill
-              navigation.navigate('Login', { prefillEmail: formData.email });
-            }
+          {
+            text: 'Xác minh email',
+            onPress: () => navigation.replace('OTPVerification', {
+              email: formData.email,
+              purpose: 'VERIFY_EMAIL',
+              fromLogin: false,
+            })
+          },
+          {
+            text: 'Đăng nhập',
+            onPress: () => navigation.navigate('Login', { prefillEmail: formData.email })
           }
         ]
       );

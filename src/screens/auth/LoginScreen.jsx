@@ -79,8 +79,22 @@ const LoginScreen = ({ navigation, route }) => {
     try {
       const result = await authService.login(trimmedEmail, password, targetProfile);
       if (result.success) {
-        // After email verification, user should have profile and can login
-        // Phone verification is separate and not required for login
+        const verification = result.user?.verification;
+        const campusVerified = verification?.is_campus_verified === true || verification?.campus_verified === true;
+        const studentStatus = verification?.student?.status;
+        const rejectionReason = verification?.student?.rejection_reason || verification?.student?.rejectionReason;
+
+        // If not verified yet, push to student verification guard
+        if (!campusVerified) {
+          navigation.replace('StudentVerification', {
+            guardMode: true,
+            studentStatus,
+            rejectionReason,
+          });
+          return;
+        }
+
+        // After email + campus verification, continue to main flows
         navigation.replace(targetProfile === 'driver' ? 'DriverMain' : 'Main');
       }
     } catch (error) {

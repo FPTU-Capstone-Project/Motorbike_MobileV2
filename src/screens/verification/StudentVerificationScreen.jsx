@@ -22,12 +22,47 @@ import AppBackground from '../../components/layout/AppBackground.jsx';
 import CleanCard from '../../components/ui/CleanCard.jsx';
 import { colors, gradients } from '../../theme/designTokens';
 
-const StudentVerificationScreen = ({ navigation }) => {
+const StudentVerificationScreen = ({ navigation, route }) => {
   const [frontImage, setFrontImage] = useState(null);
   const [backImage, setBackImage] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [currentSide, setCurrentSide] = useState('front'); // 'front' or 'back'
   const [currentVerification, setCurrentVerification] = useState(null);
+  const guardMode = route?.params?.guardMode === true;
+  const verificationStatus = currentVerification?.status?.toLowerCase();
+  const isPending = verificationStatus === 'pending';
+
+  const getStatusColor = (verification) => {
+    const status = verification?.status?.toLowerCase();
+    switch (status) {
+      case 'approved':
+      case 'verified':
+      case 'active':
+        return '#22C55E';
+      case 'pending':
+        return '#F59E0B';
+      case 'rejected':
+        return '#EF4444';
+      default:
+        return '#9CA3AF';
+    }
+  };
+
+  const getStatusText = (verification) => {
+    const status = verification?.status?.toLowerCase();
+    switch (status) {
+      case 'approved':
+      case 'verified':
+      case 'active':
+        return 'Đã xác minh';
+      case 'pending':
+        return 'Đang chờ duyệt';
+      case 'rejected':
+        return 'Bị từ chối';
+      default:
+        return 'Chưa gửi giấy tờ';
+    }
+  };
 
   // Load current verification status
   useEffect(() => {
@@ -39,24 +74,26 @@ const StudentVerificationScreen = ({ navigation }) => {
       const verification = await verificationService.getCurrentStudentVerification();
       setCurrentVerification(verification);
       
-      // If user already has pending verification, show alert and go back
-      if (verification && verification.status?.toLowerCase() === 'pending') {
-        Alert.alert(
-          'Đang chờ duyệt',
-          'Bạn đã gửi yêu cầu xác minh và đang chờ admin duyệt. Vui lòng chờ kết quả.',
-          [{ text: 'OK', onPress: () => navigation.goBack() }]
-        );
-        return;
-      }
-      
-      // If user already verified, show alert and go back
-      if (verification && (verification.status?.toLowerCase() === 'verified' || verification.status?.toLowerCase() === 'approved' || verification.status?.toLowerCase() === 'active')) {
-        Alert.alert(
-          'Đã xác minh',
-          'Tài khoản của bạn đã được xác minh.',
-          [{ text: 'OK', onPress: () => navigation.goBack() }]
-        );
-        return;
+      if (!guardMode) {
+        // If user already has pending verification, show alert and go back
+        if (verification && verification.status?.toLowerCase() === 'pending') {
+          Alert.alert(
+            'Đang chờ duyệt',
+            'Bạn đã gửi yêu cầu xác minh và đang chờ quản trị viên duyệt. Vui lòng chờ kết quả.',
+            [{ text: 'OK', onPress: () => navigation.goBack() }]
+          );
+          return;
+        }
+        
+        // If user already verified, show alert and go back
+        if (verification && (verification.status?.toLowerCase() === 'verified' || verification.status?.toLowerCase() === 'approved' || verification.status?.toLowerCase() === 'active')) {
+          Alert.alert(
+            'Đã xác minh',
+            'Tài khoản của bạn đã được xác minh.',
+            [{ text: 'OK', onPress: () => navigation.goBack() }]
+          );
+          return;
+        }
       }
 
       // If user's verification was rejected, just log it (don't show alert again)
@@ -296,13 +333,15 @@ const StudentVerificationScreen = ({ navigation }) => {
 
       Alert.alert(
         'Gửi thành công!',
-        result.message || 'Thẻ sinh viên đã được gửi để xác minh. Admin sẽ duyệt trong 1-2 ngày làm việc.',
+        result.message || 'Tài liệu đã được gửi để xác minh. Quản trị viên sẽ duyệt trong 1-2 ngày làm việc.',
         [
           { 
             text: 'OK', 
             onPress: () => {
-              // Navigate to Main screen after successful submission
-              navigation.replace('Main');
+              if (!guardMode) {
+                // Navigate to Main screen after successful submission
+                navigation.replace('Main');
+              }
             }
           }
         ]
@@ -322,6 +361,36 @@ const StudentVerificationScreen = ({ navigation }) => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
+        {guardMode && (
+          <CleanCard contentStyle={[styles.cardWrapper, styles.statusCard]}>
+            <View style={styles.statusRow}>
+              <View style={[styles.statusDot, { backgroundColor: getStatusColor(currentVerification) }]} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.statusLabel}>Trạng thái xác minh</Text>
+                <Text style={[styles.statusValue, { color: getStatusColor(currentVerification) }]}>
+                  {getStatusText(currentVerification)}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={loadCurrentVerification} style={styles.refreshBtn}>
+                <Icon name="refresh" size={16} color={colors.textPrimary} />
+                <Text style={styles.refreshText}>Làm mới</Text>
+              </TouchableOpacity>
+            </View>
+            {currentVerification?.status?.toLowerCase() === 'rejected' && (
+              <Text style={styles.rejectionText}>
+                Lý do: {currentVerification.rejection_reason || currentVerification.rejectionReason || 'Không rõ lý do'}
+              </Text>
+            )}
+            {['approved', 'verified', 'active'].includes((currentVerification?.status || '').toLowerCase()) && (
+              <ModernButton
+                title="Tiếp tục sử dụng ứng dụng"
+                onPress={() => navigation.replace('Main')}
+                style={{ marginTop: 12 }}
+              />
+            )}
+          </CleanCard>
+        )}
+
         {/* Header */}
         <LinearGradient
           colors={gradients.hero}
@@ -333,9 +402,9 @@ const StudentVerificationScreen = ({ navigation }) => {
             <TouchableOpacity 
               style={styles.backButton}
               onPress={() => {
-                // If user came from login, go to Main screen
-                // Otherwise, go back normally
-                if (navigation.canGoBack()) {
+                if (guardMode) {
+                  navigation.replace('Login');
+                } else if (navigation.canGoBack()) {
                   navigation.goBack();
                 } else {
                   navigation.replace('Main');
@@ -350,150 +419,168 @@ const StudentVerificationScreen = ({ navigation }) => {
         </LinearGradient>
 
         <View style={styles.content}>
-          {/* Instructions */}
-          <Animatable.View animation="fadeInUp" style={styles.cardWrapper}>
-            <CleanCard contentStyle={styles.instructionsCard}>
-              <View style={styles.instructionsIcon}>
-                <Icon name="school" size={40} color={colors.primary} />
-              </View>
-              <Text style={styles.instructionsTitle}>Xác minh tài khoản sinh viên</Text>
-              <Text style={styles.instructionsText}>
-                Để sử dụng dịch vụ, bạn cần xác minh là sinh viên của trường. 
-                Vui lòng chụp ảnh thẻ sinh viên rõ nét.
+          {isPending && (
+            <CleanCard style={styles.cardWrapper} contentStyle={styles.pendingCard}>
+              <Icon name="hourglass-top" size={24} color={colors.primary} />
+              <Text style={styles.pendingTitle}>Đang chờ duyệt</Text>
+              <Text style={styles.pendingText}>
+                Hồ sơ của bạn đã được gửi và đang được quản trị viên kiểm tra. Vui lòng chờ 1-2 ngày làm việc. Bạn sẽ nhận thông báo khi kết quả có sẵn.
               </Text>
+              <TouchableOpacity onPress={loadCurrentVerification} style={styles.refreshBtn}>
+                <Icon name="refresh" size={18} color={colors.textPrimary} />
+                <Text style={styles.refreshText}>Làm mới trạng thái</Text>
+              </TouchableOpacity>
             </CleanCard>
-          </Animatable.View>
+          )}
 
-          {/* Requirements */}
-          <CleanCard style={styles.cardWrapper} contentStyle={styles.requirementsCard}>
-            <Text style={styles.cardTitle}>Yêu cầu ảnh thẻ sinh viên</Text>
-            <View style={styles.requirementsList}>
-              <View style={styles.requirementItem}>
-                <Icon name="check-circle" size={20} color={colors.primary} />
-                <Text style={styles.requirementText}>Ảnh rõ nét, không bị mờ</Text>
-              </View>
-              <View style={styles.requirementItem}>
-                <Icon name="check-circle" size={20} color={colors.primary} />
-                <Text style={styles.requirementText}>Hiển thị đầy đủ thông tin trên thẻ</Text>
-              </View>
-              <View style={styles.requirementItem}>
-                <Icon name="check-circle" size={20} color={colors.primary} />
-                <Text style={styles.requirementText}>Thẻ còn hiệu lực</Text>
-              </View>
-              <View style={styles.requirementItem}>
-                <Icon name="check-circle" size={20} color={colors.primary} />
-                <Text style={styles.requirementText}>Định dạng JPG, PNG (tối đa 5MB)</Text>
-              </View>
-            </View>
-          </CleanCard>
-
-          {/* Front Image Upload Section */}
-          <CleanCard style={styles.cardWrapper} contentStyle={styles.uploadSection}>
-            <Text style={styles.cardTitle}>Mặt trước thẻ sinh viên</Text>
-            
-            {frontImage ? (
-              <Animatable.View animation="fadeIn" style={styles.selectedImageContainer}>
-                <Image source={{ uri: frontImage.uri }} style={styles.selectedImage} />
-                <TouchableOpacity 
-                  style={styles.changeImageButton}
-                  onPress={() => showImagePicker('front')}
-                >
-                  <Icon name="edit" size={20} color={colors.primary} />
-                  <Text style={styles.changeImageText}>Đổi ảnh</Text>
-                </TouchableOpacity>
+          {!isPending && (
+            <>
+              {/* Instructions */}
+              <Animatable.View animation="fadeInUp" style={styles.cardWrapper}>
+                <CleanCard contentStyle={styles.instructionsCard}>
+                  <View style={styles.instructionsIcon}>
+                    <Icon name="school" size={40} color={colors.primary} />
+                  </View>
+                  <Text style={styles.instructionsTitle}>Xác minh tài khoản sinh viên</Text>
+                  <Text style={styles.instructionsText}>
+                    Để sử dụng dịch vụ, bạn cần xác minh là sinh viên của trường. 
+                    Vui lòng chụp ảnh thẻ sinh viên rõ nét.
+                  </Text>
+                </CleanCard>
               </Animatable.View>
-            ) : (
-              <TouchableOpacity 
-                style={styles.uploadButton}
-                onPress={() => showImagePicker('front')}
-              >
-                <LinearGradient
-                  colors={gradients.pillActive}
-                  style={styles.uploadButtonGradient}
-                >
-                  <Icon name="camera-alt" size={48} color="#fff" />
-                  <Text style={styles.uploadButtonText}>Chụp mặt trước</Text>
-                  <Text style={styles.uploadButtonSubtext}>Chụp ảnh hoặc chọn từ thư viện</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            )}
-          </CleanCard>
 
-          {/* Back Image Upload Section */}
-          <CleanCard style={styles.cardWrapper} contentStyle={styles.uploadSection}>
-            <Text style={styles.cardTitle}>Mặt sau thẻ sinh viên</Text>
-            
-            {backImage ? (
-              <Animatable.View animation="fadeIn" style={styles.selectedImageContainer}>
-                <Image source={{ uri: backImage.uri }} style={styles.selectedImage} />
+              {/* Requirements */}
+              <CleanCard style={styles.cardWrapper} contentStyle={styles.requirementsCard}>
+                <Text style={styles.cardTitle}>Yêu cầu ảnh thẻ sinh viên</Text>
+                <View style={styles.requirementsList}>
+                  <View style={styles.requirementItem}>
+                    <Icon name="check-circle" size={20} color={colors.primary} />
+                    <Text style={styles.requirementText}>Ảnh rõ nét, không bị mờ</Text>
+                  </View>
+                  <View style={styles.requirementItem}>
+                    <Icon name="check-circle" size={20} color={colors.primary} />
+                    <Text style={styles.requirementText}>Hiển thị đầy đủ thông tin trên thẻ</Text>
+                  </View>
+                  <View style={styles.requirementItem}>
+                    <Icon name="check-circle" size={20} color={colors.primary} />
+                    <Text style={styles.requirementText}>Thẻ còn hiệu lực</Text>
+                  </View>
+                  <View style={styles.requirementItem}>
+                    <Icon name="check-circle" size={20} color={colors.primary} />
+                    <Text style={styles.requirementText}>Định dạng JPG, PNG (tối đa 5MB)</Text>
+                  </View>
+                </View>
+              </CleanCard>
+
+              {/* Front Image Upload Section */}
+              <CleanCard style={styles.cardWrapper} contentStyle={styles.uploadSection}>
+                <Text style={styles.cardTitle}>Mặt trước thẻ sinh viên</Text>
+                
+                {frontImage ? (
+                  <Animatable.View animation="fadeIn" style={styles.selectedImageContainer}>
+                    <Image source={{ uri: frontImage.uri }} style={styles.selectedImage} />
+                    <TouchableOpacity 
+                      style={styles.changeImageButton}
+                      onPress={() => showImagePicker('front')}
+                    >
+                      <Icon name="edit" size={20} color={colors.primary} />
+                      <Text style={styles.changeImageText}>Đổi ảnh</Text>
+                    </TouchableOpacity>
+                  </Animatable.View>
+                ) : (
+                  <TouchableOpacity 
+                    style={styles.uploadButton}
+                    onPress={() => showImagePicker('front')}
+                  >
+                    <LinearGradient
+                      colors={gradients.pillActive}
+                      style={styles.uploadButtonGradient}
+                    >
+                      <Icon name="camera-alt" size={48} color="#fff" />
+                      <Text style={styles.uploadButtonText}>Chụp mặt trước</Text>
+                      <Text style={styles.uploadButtonSubtext}>Chụp ảnh hoặc chọn từ thư viện</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                )}
+              </CleanCard>
+
+              {/* Back Image Upload Section */}
+              <CleanCard style={styles.cardWrapper} contentStyle={styles.uploadSection}>
+                <Text style={styles.cardTitle}>Mặt sau thẻ sinh viên</Text>
+                
+                {backImage ? (
+                  <Animatable.View animation="fadeIn" style={styles.selectedImageContainer}>
+                    <Image source={{ uri: backImage.uri }} style={styles.selectedImage} />
+                    <TouchableOpacity 
+                      style={styles.changeImageButton}
+                      onPress={() => showImagePicker('back')}
+                    >
+                      <Icon name="edit" size={20} color={colors.primary} />
+                      <Text style={styles.changeImageText}>Đổi ảnh</Text>
+                    </TouchableOpacity>
+                  </Animatable.View>
+                ) : (
+                  <TouchableOpacity 
+                    style={styles.uploadButton}
+                    onPress={() => showImagePicker('back')}
+                  >
+                    <LinearGradient
+                      colors={gradients.pillActive}
+                      style={styles.uploadButtonGradient}
+                    >
+                      <Icon name="camera-alt" size={48} color="#fff" />
+                      <Text style={styles.uploadButtonText}>Chụp mặt sau</Text>
+                      <Text style={styles.uploadButtonSubtext}>Chụp ảnh hoặc chọn từ thư viện</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                )}
+              </CleanCard>
+
+              {/* Sample Image */}
+              <CleanCard style={styles.cardWrapper} contentStyle={styles.sampleSection}>
+                <Text style={styles.cardTitle}>Ảnh mẫu</Text>
+                  <View style={styles.sampleImageContainer}>
+                  <View style={styles.sampleImagePlaceholder}>
+                    <Icon name="credit-card" size={64} color="rgba(148,163,184,0.6)" />
+                    <Text style={styles.sampleImageText}>Mẫu thẻ sinh viên</Text>
+                  </View>
+                  <Text style={styles.sampleDescription}>
+                    Chụp ảnh thẻ sinh viên như mẫu trên, đảm bảo thông tin rõ ràng và đầy đủ
+                  </Text>
+                </View>
+              </CleanCard>
+
+              {/* Submit Button */}
+              <ModernButton
+                title={uploading ? "Đang gửi..." : "Gửi để xác minh"}
+                onPress={submitVerification}
+                disabled={!frontImage || !backImage || uploading}
+                icon={uploading ? null : "send"}
+                style={styles.submitButton}
+              />
+
+              {/* Skip Button for Testing */}
+              {__DEV__ && !guardMode && (
                 <TouchableOpacity 
-                  style={styles.changeImageButton}
-                  onPress={() => showImagePicker('back')}
+                  style={styles.skipButton}
+                  onPress={() => {
+                    Alert.alert(
+                      'Bỏ qua xác minh',
+                      'Bạn có chắc chắn muốn bỏ qua xác minh? (Chỉ để test)',
+                      [
+                        { text: 'Hủy', style: 'cancel' },
+                        { 
+                          text: 'Bỏ qua', 
+                          onPress: () => navigation.replace('Main')
+                        }
+                      ]
+                    );
+                  }}
                 >
-                  <Icon name="edit" size={20} color={colors.primary} />
-                  <Text style={styles.changeImageText}>Đổi ảnh</Text>
+                  <Text style={styles.skipButtonText}>Bỏ qua tạm thời (Test)</Text>
                 </TouchableOpacity>
-              </Animatable.View>
-            ) : (
-              <TouchableOpacity 
-                style={styles.uploadButton}
-                onPress={() => showImagePicker('back')}
-              >
-                <LinearGradient
-                  colors={gradients.pillActive}
-                  style={styles.uploadButtonGradient}
-                >
-                  <Icon name="camera-alt" size={48} color="#fff" />
-                  <Text style={styles.uploadButtonText}>Chụp mặt sau</Text>
-                  <Text style={styles.uploadButtonSubtext}>Chụp ảnh hoặc chọn từ thư viện</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            )}
-          </CleanCard>
-
-          {/* Sample Image */}
-          <CleanCard style={styles.cardWrapper} contentStyle={styles.sampleSection}>
-            <Text style={styles.cardTitle}>Ảnh mẫu</Text>
-              <View style={styles.sampleImageContainer}>
-              <View style={styles.sampleImagePlaceholder}>
-                <Icon name="credit-card" size={64} color="rgba(148,163,184,0.6)" />
-                <Text style={styles.sampleImageText}>Mẫu thẻ sinh viên</Text>
-              </View>
-              <Text style={styles.sampleDescription}>
-                Chụp ảnh thẻ sinh viên như mẫu trên, đảm bảo thông tin rõ ràng và đầy đủ
-              </Text>
-            </View>
-          </CleanCard>
-
-          {/* Submit Button */}
-          <ModernButton
-            title={uploading ? "Đang gửi..." : "Gửi để xác minh"}
-            onPress={submitVerification}
-            disabled={!frontImage || !backImage || uploading}
-            icon={uploading ? null : "send"}
-            style={styles.submitButton}
-          />
-
-          {/* Skip Button for Testing */}
-          {__DEV__ && (
-            <TouchableOpacity 
-              style={styles.skipButton}
-              onPress={() => {
-                Alert.alert(
-                  'Bỏ qua xác minh',
-                  'Bạn có chắc chắn muốn bỏ qua xác minh? (Chỉ để test)',
-                  [
-                    { text: 'Hủy', style: 'cancel' },
-                    { 
-                      text: 'Bỏ qua', 
-                      onPress: () => navigation.replace('Main')
-                    }
-                  ]
-                );
-              }}
-            >
-              <Text style={styles.skipButtonText}>Bỏ qua tạm thời (Test)</Text>
-            </TouchableOpacity>
+              )}
+            </>
           )}
 
           {uploading && (
@@ -547,7 +634,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: colors.textPrimary,
+    color: '#F8FAFC',
   },
   placeholder: {
     width: 36,
@@ -700,6 +787,64 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.primary,
     marginLeft: 8,
+  },
+  statusCard: {
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    marginBottom: 12,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  statusDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  statusLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  statusValue: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  refreshBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    backgroundColor: 'rgba(148,163,184,0.18)',
+  },
+  refreshText: {
+    fontSize: 12,
+    color: colors.textPrimary,
+    fontWeight: '600',
+  },
+  rejectionText: {
+    marginTop: 8,
+    color: '#EF4444',
+    fontSize: 13,
+  },
+  pendingCard: {
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  pendingTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  pendingText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    lineHeight: 20,
   },
   infoCard: {
     flexDirection: 'row',

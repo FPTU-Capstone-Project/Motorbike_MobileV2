@@ -20,6 +20,8 @@ import ModernButton from '../../components/ModernButton.jsx';
 import authService from '../../services/authService';
 import verificationService from '../../services/verificationService';
 import { ApiError } from '../../services/api';
+import { colors } from '../../theme/designTokens';
+import CleanCard from '../../components/ui/CleanCard.jsx';
 
 const DriverVerificationScreen = ({ navigation }) => {
   // State for each document type
@@ -31,9 +33,15 @@ const DriverVerificationScreen = ({ navigation }) => {
   const [vehicleAuthorizationBack, setVehicleAuthorizationBack] = useState(null);
   
   const [uploading, setUploading] = useState(false);
+  const [switching, setSwitching] = useState(false);
   const [currentDocument, setCurrentDocument] = useState('license'); // license, vehicleRegistration, vehicleAuthorization
   const [currentSide, setCurrentSide] = useState('front'); // front, back
   const [currentVerification, setCurrentVerification] = useState(null);
+  const verificationStatus = currentVerification?.status?.toLowerCase();
+  const isPending = verificationStatus === 'pending';
+  const isApproved = ['approved', 'verified', 'active'].includes(verificationStatus || '');
+  const isInactive = verificationStatus === 'inactive';
+  const isRejected = verificationStatus === 'rejected';
 
   // Load current verification status
   useEffect(() => {
@@ -58,37 +66,26 @@ const DriverVerificationScreen = ({ navigation }) => {
 
       const verification = await verificationService.getCurrentDriverVerification();
       setCurrentVerification(verification);
-      
-      // If user already has pending verification, show alert and go back
-      if (verification && verification.status?.toLowerCase() === 'pending') {
-        Alert.alert(
-          'Đang chờ duyệt',
-          'Bạn đã gửi yêu cầu xác minh tài xế và đang chờ admin duyệt. Vui lòng chờ kết quả.',
-          [{ text: 'OK', onPress: () => navigation.goBack() }]
-        );
-        return;
-      }
-      
-      // If user already verified, show alert and go back
-      if (verification && (verification.status?.toLowerCase() === 'verified' || verification.status?.toLowerCase() === 'approved' || verification.status?.toLowerCase() === 'active')) {
-        Alert.alert(
-          'Đã xác minh',
-          'Tài khoản tài xế của bạn đã được xác minh.',
-          [{ text: 'OK', onPress: () => navigation.goBack() }]
-        );
-        return;
-      }
-
-      // If user's verification was rejected, just log it (don't show alert again)
-      // The alert was already shown in ProfileSwitchScreen
-      if (verification && verification.status?.toLowerCase() === 'rejected') {
-        console.log('User has rejected driver verification, allowing resubmission');
-        // Continue with the form to allow resubmission
-        return;
-      }
     } catch (error) {
       console.log('No current driver verification found or error:', error);
       setCurrentVerification(null);
+    }
+  };
+
+  const handleSwitchToDriver = async () => {
+    try {
+      setSwitching(true);
+      const result = await authService.switchProfile('driver');
+      if (result?.active_profile?.toLowerCase?.() === 'driver' || result?.activeProfile?.toLowerCase?.() === 'driver') {
+        navigation.replace('DriverMain');
+      } else {
+        navigation.replace('DriverMain');
+      }
+    } catch (error) {
+      console.error('Switch to driver error:', error);
+      Alert.alert('Lỗi', 'Không thể chuyển sang chế độ tài xế. Vui lòng thử lại.');
+    } finally {
+      setSwitching(false);
     }
   };
 
@@ -477,64 +474,107 @@ const DriverVerificationScreen = ({ navigation }) => {
         </LinearGradient>
 
         <View style={styles.content}>
-          {/* Instructions */}
-          <Animatable.View animation="fadeInUp" style={styles.instructionsCard}>
-            <Icon name="info" size={24} color="#FF9800" />
-            <View style={styles.instructionsContent}>
-              <Text style={styles.instructionsTitle}>Hướng dẫn gửi giấy tờ</Text>
-            <Text style={styles.instructionsText}>
-                Vui lòng chụp rõ nét các giấy tờ sau để xác minh tài khoản tài xế:
-              </Text>
-              <Text style={styles.instructionsList}>
-                • Bằng lái xe (2 mặt){'\n'}
-                • Giấy chứng nhận đăng ký xe (2 mặt){'\n'}
-                • Giấy ủy quyền phương tiện (2 mặt) - nếu có
-            </Text>
-            </View>
-          </Animatable.View>
-
-          {/* License Section */}
-          {renderDocumentSection(
-            'license',
-            'Bằng lái xe',
-            'Chụp ảnh mặt trước và mặt sau của bằng lái xe',
-            licenseFront,
-            licenseBack,
-            setLicenseFront,
-            setLicenseBack
+          {/* Status block for pending/approved/inactive/rejected */}
+          {(isPending || isApproved || isInactive || isRejected) && (
+            <CleanCard style={styles.statusCard}>
+              <View style={styles.statusRow}>
+                <Icon
+                  name={(isApproved || isInactive) ? "check-circle" : isRejected ? "cancel" : "hourglass-top"}
+                  size={24}
+                  color={(isApproved || isInactive) ? "#10B981" : isRejected ? "#EF4444" : "#F59E0B"}
+                />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.statusTitle}>
+                    {isApproved ? 'Đã xác minh tài xế' : isInactive ? 'Đã duyệt (chưa bật chế độ tài xế)' : isRejected ? 'Bị từ chối' : 'Đang chờ duyệt'}
+                  </Text>
+                  <Text style={styles.statusText}>
+                    {isApproved
+                      ? 'Hồ sơ tài xế đã được phê duyệt. Bạn có thể chuyển sang chế độ tài xế sau khi kích hoạt.'
+                      : isInactive
+                        ? 'Hồ sơ đã duyệt. Chuyển sang chế độ tài xế để bắt đầu nhận chuyến.'
+                      : isRejected
+                        ? 'Giấy tờ bị từ chối. Vui lòng xem lý do trong thông báo và gửi lại.'
+                        : 'Bạn đã gửi giấy tờ và đang chờ admin duyệt. Vui lòng chờ 1-2 ngày làm việc.'}
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity onPress={loadCurrentVerification} style={styles.refreshBtn}>
+                <Icon name="refresh" size={18} color={colors.textPrimary} />
+                <Text style={styles.refreshText}>Làm mới trạng thái</Text>
+              </TouchableOpacity>
+              {(isApproved || isInactive) && (
+                <ModernButton
+                  title={switching ? "Đang chuyển..." : "Chuyển sang chế độ tài xế"}
+                  onPress={handleSwitchToDriver}
+                  disabled={switching}
+                  style={{ marginTop: 12 }}
+                />
+              )}
+            </CleanCard>
           )}
 
-          {/* Vehicle Registration Section */}
-          {renderDocumentSection(
-            'vehicleRegistration',
-            'Giấy chứng nhận đăng ký xe',
-            'Chụp ảnh mặt trước và mặt sau của giấy chứng nhận đăng ký xe mô tô, xe gắn máy',
-            vehicleRegistrationFront,
-            vehicleRegistrationBack,
-            setVehicleRegistrationFront,
-            setVehicleRegistrationBack
-          )}
+          {/* Form only when not pending/approved/inactive */}
+          {!isPending && !isApproved && !isInactive && (
+            <>
+              <Animatable.View animation="fadeInUp" style={styles.instructionsCard}>
+                <Icon name="info" size={24} color="#FF9800" />
+                <View style={styles.instructionsContent}>
+                  <Text style={styles.instructionsTitle}>Hướng dẫn gửi giấy tờ</Text>
+                <Text style={styles.instructionsText}>
+                    Vui lòng chụp rõ nét các giấy tờ sau để xác minh tài khoản tài xế:
+                  </Text>
+                  <Text style={styles.instructionsList}>
+                    • Bằng lái xe (2 mặt){'\n'}
+                    • Giấy chứng nhận đăng ký xe (2 mặt){'\n'}
+                    • Giấy ủy quyền phương tiện (2 mặt) - nếu có
+                </Text>
+                </View>
+              </Animatable.View>
 
-          {/* Vehicle Authorization Section (Optional) */}
-          {renderDocumentSection(
-            'vehicleAuthorization',
-            'Giấy ủy quyền phương tiện (Tùy chọn)',
-            'Nếu bạn không phải chủ xe, vui lòng chụp giấy ủy quyền phương tiện',
-            vehicleAuthorizationFront,
-            vehicleAuthorizationBack,
-            setVehicleAuthorizationFront,
-            setVehicleAuthorizationBack
-          )}
+              {/* License Section */}
+              {renderDocumentSection(
+                'license',
+                'Bằng lái xe',
+                'Chụp ảnh mặt trước và mặt sau của bằng lái xe',
+                licenseFront,
+                licenseBack,
+                setLicenseFront,
+                setLicenseBack
+              )}
 
-          {/* Submit Button */}
-          <Animatable.View animation="fadeInUp" style={styles.submitContainer}>
-          <ModernButton
-              title="Gửi giấy tờ xác minh"
-            onPress={submitVerification}
-              disabled={uploading || !licenseFront || !licenseBack || !vehicleRegistrationFront || !vehicleRegistrationBack}
-              loading={uploading}
-          />
-          </Animatable.View>
+              {/* Vehicle Registration Section */}
+              {renderDocumentSection(
+                'vehicleRegistration',
+                'Giấy chứng nhận đăng ký xe',
+                'Chụp ảnh mặt trước và mặt sau của giấy chứng nhận đăng ký xe mô tô, xe gắn máy',
+                vehicleRegistrationFront,
+                vehicleRegistrationBack,
+                setVehicleRegistrationFront,
+                setVehicleRegistrationBack
+              )}
+
+              {/* Vehicle Authorization Section (Optional) */}
+              {renderDocumentSection(
+                'vehicleAuthorization',
+                'Giấy ủy quyền phương tiện (Tùy chọn)',
+                'Nếu bạn không phải chủ xe, vui lòng chụp giấy ủy quyền phương tiện',
+                vehicleAuthorizationFront,
+                vehicleAuthorizationBack,
+                setVehicleAuthorizationFront,
+                setVehicleAuthorizationBack
+              )}
+
+              {/* Submit Button */}
+              <Animatable.View animation="fadeInUp" style={styles.submitContainer}>
+              <ModernButton
+                  title="Gửi giấy tờ xác minh"
+                onPress={submitVerification}
+                  disabled={uploading || !licenseFront || !licenseBack || !vehicleRegistrationFront || !vehicleRegistrationBack}
+                  loading={uploading}
+              />
+              </Animatable.View>
+            </>
+          )}
         </View>
       </ScrollView>
 
@@ -700,6 +740,43 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     marginTop: 12,
+  },
+  statusCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  statusTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111',
+  },
+  statusText: {
+    fontSize: 14,
+    color: '#4b5563',
+    marginTop: 4,
+  },
+  refreshBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 12,
+  },
+  refreshText: {
+    fontSize: 13,
+    color: colors.textPrimary,
+    fontWeight: '600',
   },
 });
 

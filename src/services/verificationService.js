@@ -13,47 +13,34 @@ class VerificationService {
     try {
       console.log('Getting current student verification...');
       
-      // Get current user ID
       const authService = require('./authService').default;
-      const currentUser = authService.getCurrentUser();
-      
-      if (!currentUser || !currentUser.user?.user_id) {
-        console.log('No current user found');
+
+      // Always refresh profile to get verification summary from /me
+      const profile = await authService.getCurrentUserProfile(true).catch(() => authService.getCurrentUser());
+      const userId = profile?.user?.user_id;
+      if (!profile || !userId) {
+        console.log('No current user/profile found');
         return null;
       }
-      
-      const userId = currentUser.user.user_id;
-      
-      // Try to get from API first
-      try {
-        const response = await this.apiService.get(`/verification/students/${userId}`);
-        console.log('Verification API response:', response);
-        
-        if (response) {
-          console.log('Found student verification:', response);
-          return response;
-        }
-      } catch (apiError) {
-        console.log('API error (user may not have verification yet):', apiError);
-        // If 404, it means user has no verification - this is normal
-        if (apiError.status === 404) {
-          console.log('No verification found for user - this is normal for new users');
-          return null;
-        }
+
+      // Prefer verification block returned by /me
+      const studentVerification = profile.verification?.student;
+      if (studentVerification) {
+        return studentVerification;
       }
-      
-      // Fallback to user profile data
-      if (currentUser && currentUser.rider_profile) {
-        console.log('Using rider profile data:', currentUser.rider_profile);
+
+      // Fallback: rider profile status
+      if (profile.rider_profile) {
+        console.log('Using rider profile data:', profile.rider_profile);
         return {
-          status: currentUser.rider_profile.status,
+          status: profile.rider_profile.status,
           type: 'STUDENT_ID',
           user_id: userId,
-          created_at: currentUser.rider_profile.created_at,
-          verified_at: currentUser.rider_profile.verified_at
+          created_at: profile.rider_profile.created_at,
+          verified_at: profile.rider_profile.verified_at
         };
       }
-      
+
       console.log('No verification found');
       return null;
     } catch (error) {
@@ -67,47 +54,38 @@ class VerificationService {
     try {
       console.log('Getting current driver verification...');
       
-      // Get current user ID
       const authService = require('./authService').default;
-      const currentUser = authService.getCurrentUser();
-      
-      if (!currentUser || !currentUser.user?.user_id) {
+      const profile = await authService.getCurrentUserProfile(true).catch(() => authService.getCurrentUser());
+
+      if (!profile || !profile.user?.user_id) {
         console.log('No current user found');
         return null;
       }
-      
-      const userId = currentUser.user.user_id;
-      
-      // Try to get from API first
-      try {
-        const response = await this.apiService.get(`/verification/drivers/${userId}/kyc`);
-        console.log('Driver verification API response:', response);
-        
-        if (response) {
-          console.log('Found driver verification:', response);
-          return response;
-        }
-      } catch (apiError) {
-        console.log('API error (user may not have driver verification yet):', apiError);
-        // If 404, it means user has no driver verification - this is normal
-        if (apiError.status === 404) {
-          console.log('No driver verification found for user - this is normal for new users');
-          return null;
-        }
-      }
-      
-      // Fallback to user profile data
-      if (currentUser && currentUser.driver_profile) {
-        console.log('Using driver profile data:', currentUser.driver_profile);
+
+      const driverProfile = profile.driver_profile || profile.driverProfile;
+      if (driverProfile) {
+        console.log('Using driver profile data:', driverProfile);
         return {
-          status: currentUser.driver_profile.status,
+          status: driverProfile.status,
           type: 'DRIVER_VERIFICATION',
-          user_id: userId,
-          created_at: currentUser.driver_profile.created_at,
-          verified_at: currentUser.driver_profile.verified_at
+          user_id: profile.user.user_id,
+          created_at: driverProfile.created_at,
+          verified_at: driverProfile.verified_at
         };
       }
-      
+
+      // Fallback to verification summary from /me
+      const verificationStatus = profile.verification?.driver_profile_status || profile.verification?.driverProfileStatus;
+      if (verificationStatus) {
+        return {
+          status: verificationStatus,
+          type: 'DRIVER_VERIFICATION',
+          user_id: profile.user.user_id,
+          created_at: null,
+          verified_at: null,
+        };
+      }
+
       console.log('No driver verification found');
       return null;
     } catch (error) {
