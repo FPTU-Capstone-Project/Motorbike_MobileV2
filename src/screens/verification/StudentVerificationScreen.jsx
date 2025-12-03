@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as Animatable from 'react-native-animatable';
@@ -20,7 +19,8 @@ import ModernButton from '../../components/ModernButton.jsx';
 import verificationService from '../../services/verificationService';
 import AppBackground from '../../components/layout/AppBackground.jsx';
 import CleanCard from '../../components/ui/CleanCard.jsx';
-import { colors, gradients } from '../../theme/designTokens';
+import { SoftBackHeader } from '../../components/ui/GlassHeader.jsx';
+import { colors, gradients, spacing, radii } from '../../theme/designTokens';
 
 const StudentVerificationScreen = ({ navigation }) => {
   const [frontImage, setFrontImage] = useState(null);
@@ -317,202 +317,169 @@ const StudentVerificationScreen = ({ navigation }) => {
 
   return (
     <AppBackground>
-      <SafeAreaView style={styles.safe}>
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <SoftBackHeader
+          title="Xác minh sinh viên"
+          onBackPress={() => {
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+            } else {
+              navigation.replace('Main');
+            }
+          }}
+        />
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-        {/* Header */}
-        <LinearGradient
-          colors={gradients.hero}
-          style={styles.header}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
-          <View style={styles.headerContent}>
-            <TouchableOpacity 
-              style={styles.backButton}
-              onPress={() => {
-                // If user came from login, go to Main screen
-                // Otherwise, go back normally
-                if (navigation.canGoBack()) {
-                  navigation.goBack();
-                } else {
-                  navigation.replace('Main');
-                }
-              }}
-            >
-              <Icon name="arrow-back" size={24} color="#fff" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Xác minh sinh viên</Text>
-            <View style={styles.placeholder} />
+          <View style={styles.content}>
+            {/* Instructions Card */}
+            <Animatable.View animation="fadeInUp" delay={100} style={styles.cardWrapper}>
+              <CleanCard contentStyle={styles.instructionsCard}>
+                <View style={styles.instructionsHeader}>
+                  <View style={styles.iconWrapper}>
+                    <Icon name="school" size={32} color={colors.primary} />
+                  </View>
+                  <View style={styles.instructionsTextWrapper}>
+                    <Text style={styles.instructionsTitle}>Xác minh tài khoản sinh viên</Text>
+                    <Text style={styles.instructionsText}>
+                      Để sử dụng dịch vụ, bạn cần xác minh là sinh viên của trường. 
+                      Vui lòng chụp ảnh thẻ sinh viên rõ nét.
+                    </Text>
+                  </View>
+                </View>
+              </CleanCard>
+            </Animatable.View>
+
+            {/* Requirements Card */}
+            <Animatable.View animation="fadeInUp" delay={200} style={styles.cardWrapper}>
+              <CleanCard contentStyle={styles.requirementsCard}>
+                <Text style={styles.cardTitle}>Yêu cầu ảnh thẻ sinh viên</Text>
+                <View style={styles.requirementsList}>
+                  {[
+                    'Ảnh rõ nét, không bị mờ',
+                    'Hiển thị đầy đủ thông tin trên thẻ',
+                    'Thẻ còn hiệu lực',
+                    'Định dạng JPG, PNG (tối đa 5MB)'
+                  ].map((requirement, index) => (
+                    <View key={index} style={styles.requirementItem}>
+                      <Icon name="check-circle" size={18} color={colors.primary} />
+                      <Text style={styles.requirementText}>{requirement}</Text>
+                    </View>
+                  ))}
+                </View>
+              </CleanCard>
+            </Animatable.View>
+
+            {/* Front Image Upload Card */}
+            <Animatable.View animation="fadeInUp" delay={300} style={styles.cardWrapper}>
+              <CleanCard contentStyle={styles.uploadCard}>
+                <Text style={styles.cardTitle}>Mặt trước thẻ sinh viên</Text>
+                {frontImage ? (
+                  <Animatable.View animation="fadeIn" style={styles.imagePreviewWrapper}>
+                    <Image source={{ uri: frontImage.uri }} style={styles.previewImage} />
+                    <TouchableOpacity 
+                      style={styles.changeButton}
+                      onPress={() => showImagePicker('front')}
+                    >
+                      <Icon name="edit" size={18} color={colors.accent} />
+                      <Text style={styles.changeButtonText}>Đổi ảnh</Text>
+                    </TouchableOpacity>
+                  </Animatable.View>
+                ) : (
+                  <TouchableOpacity 
+                    style={styles.uploadArea}
+                    onPress={() => showImagePicker('front')}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.uploadIconWrapper}>
+                      <Icon name="camera-alt" size={40} color={colors.accent} />
+                    </View>
+                    <Text style={styles.uploadAreaText}>Chụp mặt trước</Text>
+                    <Text style={styles.uploadAreaSubtext}>Chụp ảnh hoặc chọn từ thư viện</Text>
+                  </TouchableOpacity>
+                )}
+              </CleanCard>
+            </Animatable.View>
+
+            {/* Back Image Upload Card */}
+            <Animatable.View animation="fadeInUp" delay={400} style={styles.cardWrapper}>
+              <CleanCard contentStyle={styles.uploadCard}>
+                <Text style={styles.cardTitle}>Mặt sau thẻ sinh viên</Text>
+                {backImage ? (
+                  <Animatable.View animation="fadeIn" style={styles.imagePreviewWrapper}>
+                    <Image source={{ uri: backImage.uri }} style={styles.previewImage} />
+                    <TouchableOpacity 
+                      style={styles.changeButton}
+                      onPress={() => showImagePicker('back')}
+                    >
+                      <Icon name="edit" size={18} color={colors.accent} />
+                      <Text style={styles.changeButtonText}>Đổi ảnh</Text>
+                    </TouchableOpacity>
+                  </Animatable.View>
+                ) : (
+                  <TouchableOpacity 
+                    style={styles.uploadArea}
+                    onPress={() => showImagePicker('back')}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.uploadIconWrapper}>
+                      <Icon name="camera-alt" size={40} color={colors.accent} />
+                    </View>
+                    <Text style={styles.uploadAreaText}>Chụp mặt sau</Text>
+                    <Text style={styles.uploadAreaSubtext}>Chụp ảnh hoặc chọn từ thư viện</Text>
+                  </TouchableOpacity>
+                )}
+              </CleanCard>
+            </Animatable.View>
+
+            {/* Info Card */}
+            <Animatable.View animation="fadeInUp" delay={500} style={styles.cardWrapper}>
+              <CleanCard variant="accent" contentStyle={styles.infoCard}>
+                <View style={styles.infoContent}>
+                  <Icon name="info" size={20} color={colors.accent} />
+                  <Text style={styles.infoText}>
+                    Quá trình xác minh có thể mất 1-2 ngày làm việc. 
+                    Chúng tôi sẽ thông báo kết quả qua email.
+                  </Text>
+                </View>
+              </CleanCard>
+            </Animatable.View>
+
+            {/* Submit Button */}
+            <Animatable.View animation="fadeInUp" delay={600} style={styles.buttonWrapper}>
+              <ModernButton
+                title={uploading ? "Đang gửi..." : "Gửi để xác minh"}
+                onPress={submitVerification}
+                disabled={!frontImage || !backImage || uploading}
+                icon={uploading ? null : "send"}
+                loading={uploading}
+              />
+            </Animatable.View>
+
+            {/* Skip Button for Testing */}
+            {__DEV__ && (
+              <TouchableOpacity 
+                style={styles.skipButton}
+                onPress={() => {
+                  Alert.alert(
+                    'Bỏ qua xác minh',
+                    'Bạn có chắc chắn muốn bỏ qua xác minh? (Chỉ để test)',
+                    [
+                      { text: 'Hủy', style: 'cancel' },
+                      { 
+                        text: 'Bỏ qua', 
+                        onPress: () => navigation.replace('Main')
+                      }
+                    ]
+                  );
+                }}
+              >
+                <Text style={styles.skipButtonText}>Bỏ qua tạm thời (Test)</Text>
+              </TouchableOpacity>
+            )}
           </View>
-        </LinearGradient>
-
-        <View style={styles.content}>
-          {/* Instructions */}
-          <Animatable.View animation="fadeInUp" style={styles.cardWrapper}>
-            <CleanCard contentStyle={styles.instructionsCard}>
-              <View style={styles.instructionsIcon}>
-                <Icon name="school" size={40} color={colors.primary} />
-              </View>
-              <Text style={styles.instructionsTitle}>Xác minh tài khoản sinh viên</Text>
-              <Text style={styles.instructionsText}>
-                Để sử dụng dịch vụ, bạn cần xác minh là sinh viên của trường. 
-                Vui lòng chụp ảnh thẻ sinh viên rõ nét.
-              </Text>
-            </CleanCard>
-          </Animatable.View>
-
-          {/* Requirements */}
-          <CleanCard style={styles.cardWrapper} contentStyle={styles.requirementsCard}>
-            <Text style={styles.cardTitle}>Yêu cầu ảnh thẻ sinh viên</Text>
-            <View style={styles.requirementsList}>
-              <View style={styles.requirementItem}>
-                <Icon name="check-circle" size={20} color={colors.primary} />
-                <Text style={styles.requirementText}>Ảnh rõ nét, không bị mờ</Text>
-              </View>
-              <View style={styles.requirementItem}>
-                <Icon name="check-circle" size={20} color={colors.primary} />
-                <Text style={styles.requirementText}>Hiển thị đầy đủ thông tin trên thẻ</Text>
-              </View>
-              <View style={styles.requirementItem}>
-                <Icon name="check-circle" size={20} color={colors.primary} />
-                <Text style={styles.requirementText}>Thẻ còn hiệu lực</Text>
-              </View>
-              <View style={styles.requirementItem}>
-                <Icon name="check-circle" size={20} color={colors.primary} />
-                <Text style={styles.requirementText}>Định dạng JPG, PNG (tối đa 5MB)</Text>
-              </View>
-            </View>
-          </CleanCard>
-
-          {/* Front Image Upload Section */}
-          <CleanCard style={styles.cardWrapper} contentStyle={styles.uploadSection}>
-            <Text style={styles.cardTitle}>Mặt trước thẻ sinh viên</Text>
-            
-            {frontImage ? (
-              <Animatable.View animation="fadeIn" style={styles.selectedImageContainer}>
-                <Image source={{ uri: frontImage.uri }} style={styles.selectedImage} />
-                <TouchableOpacity 
-                  style={styles.changeImageButton}
-                  onPress={() => showImagePicker('front')}
-                >
-                  <Icon name="edit" size={20} color={colors.primary} />
-                  <Text style={styles.changeImageText}>Đổi ảnh</Text>
-                </TouchableOpacity>
-              </Animatable.View>
-            ) : (
-              <TouchableOpacity 
-                style={styles.uploadButton}
-                onPress={() => showImagePicker('front')}
-              >
-                <LinearGradient
-                  colors={gradients.pillActive}
-                  style={styles.uploadButtonGradient}
-                >
-                  <Icon name="camera-alt" size={48} color="#fff" />
-                  <Text style={styles.uploadButtonText}>Chụp mặt trước</Text>
-                  <Text style={styles.uploadButtonSubtext}>Chụp ảnh hoặc chọn từ thư viện</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            )}
-          </CleanCard>
-
-          {/* Back Image Upload Section */}
-          <CleanCard style={styles.cardWrapper} contentStyle={styles.uploadSection}>
-            <Text style={styles.cardTitle}>Mặt sau thẻ sinh viên</Text>
-            
-            {backImage ? (
-              <Animatable.View animation="fadeIn" style={styles.selectedImageContainer}>
-                <Image source={{ uri: backImage.uri }} style={styles.selectedImage} />
-                <TouchableOpacity 
-                  style={styles.changeImageButton}
-                  onPress={() => showImagePicker('back')}
-                >
-                  <Icon name="edit" size={20} color={colors.primary} />
-                  <Text style={styles.changeImageText}>Đổi ảnh</Text>
-                </TouchableOpacity>
-              </Animatable.View>
-            ) : (
-              <TouchableOpacity 
-                style={styles.uploadButton}
-                onPress={() => showImagePicker('back')}
-              >
-                <LinearGradient
-                  colors={gradients.pillActive}
-                  style={styles.uploadButtonGradient}
-                >
-                  <Icon name="camera-alt" size={48} color="#fff" />
-                  <Text style={styles.uploadButtonText}>Chụp mặt sau</Text>
-                  <Text style={styles.uploadButtonSubtext}>Chụp ảnh hoặc chọn từ thư viện</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            )}
-          </CleanCard>
-
-          {/* Sample Image */}
-          <CleanCard style={styles.cardWrapper} contentStyle={styles.sampleSection}>
-            <Text style={styles.cardTitle}>Ảnh mẫu</Text>
-              <View style={styles.sampleImageContainer}>
-              <View style={styles.sampleImagePlaceholder}>
-                <Icon name="credit-card" size={64} color="rgba(148,163,184,0.6)" />
-                <Text style={styles.sampleImageText}>Mẫu thẻ sinh viên</Text>
-              </View>
-              <Text style={styles.sampleDescription}>
-                Chụp ảnh thẻ sinh viên như mẫu trên, đảm bảo thông tin rõ ràng và đầy đủ
-              </Text>
-            </View>
-          </CleanCard>
-
-          {/* Submit Button */}
-          <ModernButton
-            title={uploading ? "Đang gửi..." : "Gửi để xác minh"}
-            onPress={submitVerification}
-            disabled={!frontImage || !backImage || uploading}
-            icon={uploading ? null : "send"}
-            style={styles.submitButton}
-          />
-
-          {/* Skip Button for Testing */}
-          {__DEV__ && (
-            <TouchableOpacity 
-              style={styles.skipButton}
-              onPress={() => {
-                Alert.alert(
-                  'Bỏ qua xác minh',
-                  'Bạn có chắc chắn muốn bỏ qua xác minh? (Chỉ để test)',
-                  [
-                    { text: 'Hủy', style: 'cancel' },
-                    { 
-                      text: 'Bỏ qua', 
-                      onPress: () => navigation.replace('Main')
-                    }
-                  ]
-                );
-              }}
-            >
-              <Text style={styles.skipButtonText}>Bỏ qua tạm thời (Test)</Text>
-            </TouchableOpacity>
-          )}
-
-          {uploading && (
-            <View style={styles.uploadingContainer}>
-              <ActivityIndicator size="small" color={colors.primary} />
-              <Text style={styles.uploadingText}>Đang tải lên và xử lý...</Text>
-            </View>
-          )}
-
-          {/* Info */}
-          <CleanCard style={styles.cardWrapper} contentStyle={styles.infoCard}>
-            <Icon name="info" size={20} color="#F59E0B" />
-            <Text style={styles.infoText}>
-              Quá trình xác minh có thể mất 1-2 ngày làm việc. 
-              Chúng tôi sẽ thông báo kết quả qua email.
-            </Text>
-          </CleanCard>
-        </View>
-      </ScrollView>
+        </ScrollView>
       </SafeAreaView>
     </AppBackground>
   );
@@ -523,212 +490,164 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingTop: 12,
-    paddingBottom: 140,
-  },
-  header: {
-    marginHorizontal: 20,
-    marginTop: 16,
-    marginBottom: 24,
-    borderRadius: 28,
-    paddingVertical: 22,
-    paddingHorizontal: 20,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  backButton: {
-    padding: 8,
-    backgroundColor: colors.glassLight,
-    borderRadius: 16,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  placeholder: {
-    width: 36,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xl * 2,
+    paddingHorizontal: spacing.md,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
   },
   cardWrapper: {
-    marginBottom: 20,
+    marginBottom: spacing.md,
   },
+  // Instructions Card
   instructionsCard: {
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 24,
+    paddingVertical: spacing.lg,
   },
-  instructionsIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
-    backgroundColor: 'rgba(24,78,63,0.6)',
+  instructionsHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  iconWrapper: {
+    width: 56,
+    height: 56,
+    borderRadius: radii.md,
+    backgroundColor: 'rgba(16,65,47,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 18,
+    marginRight: spacing.md,
+  },
+  instructionsTextWrapper: {
+    flex: 1,
   },
   instructionsTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
     color: colors.textPrimary,
-    marginBottom: 12,
-    textAlign: 'center',
+    marginBottom: spacing.sm,
   },
   instructionsText: {
-    fontSize: 15,
+    fontSize: 14,
     color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 20,
   },
+  // Requirements Card
   requirementsCard: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
+    paddingVertical: spacing.lg,
   },
   cardTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: colors.textPrimary,
-    marginBottom: 18,
+    marginBottom: spacing.md,
   },
-  requirementsList: {},
+  requirementsList: {
+    gap: spacing.sm,
+  },
   requirementItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 14,
+    gap: spacing.sm,
   },
   requirementText: {
     fontSize: 14,
     color: colors.textSecondary,
-    marginLeft: 12,
     flex: 1,
+    lineHeight: 20,
   },
-  uploadSection: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
+  // Upload Card
+  uploadCard: {
+    paddingVertical: spacing.lg,
   },
-  uploadButton: {
-    borderRadius: 18,
-    overflow: 'hidden',
-  },
-  uploadButtonGradient: {
-    padding: 32,
+  uploadArea: {
     alignItems: 'center',
-    borderWidth: 1.5,
+    justifyContent: 'center',
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radii.md,
+    borderWidth: 2,
     borderColor: colors.border,
     borderStyle: 'dashed',
-    borderRadius: 18,
+    backgroundColor: colors.glassLight,
   },
-  uploadButtonText: {
-    fontSize: 18,
-    fontWeight: '700',
+  uploadIconWrapper: {
+    width: 64,
+    height: 64,
+    borderRadius: radii.md,
+    backgroundColor: 'rgba(59,130,246,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  uploadAreaText: {
+    fontSize: 16,
+    fontWeight: '600',
     color: colors.textPrimary,
-    marginTop: 14,
+    marginBottom: spacing.xs,
   },
-  uploadButtonSubtext: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginTop: 4,
+  uploadAreaSubtext: {
+    fontSize: 13,
+    color: colors.textMuted,
   },
-  selectedImageContainer: {
+  // Image Preview
+  imagePreviewWrapper: {
     alignItems: 'center',
   },
-  selectedImage: {
+  previewImage: {
     width: '100%',
     height: 200,
-    borderRadius: 16,
+    borderRadius: radii.md,
     resizeMode: 'cover',
+    backgroundColor: colors.glassLight,
   },
-  changeImageButton: {
+  changeButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 12,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
+    marginTop: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    gap: spacing.xs,
   },
-  changeImageText: {
-    fontSize: 15,
+  changeButtonText: {
+    fontSize: 14,
     color: colors.accent,
-    marginLeft: 8,
     fontWeight: '600',
   },
-  sampleSection: {
-    paddingHorizontal: 20,
-    paddingVertical: 22,
-  },
-  sampleImageContainer: {
-    alignItems: 'center',
-  },
-  sampleImagePlaceholder: {
-    width: '100%',
-    height: 160,
-    backgroundColor: colors.glassLight,
-    borderRadius: 18,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    borderStyle: 'dashed',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  sampleImageText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginTop: 8,
-  },
-  sampleDescription: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 21,
-  },
-  submitButton: {
-    marginBottom: 16,
-  },
-  uploadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  uploadingText: {
-    fontSize: 14,
-    color: colors.primary,
-    marginLeft: 8,
-  },
+  // Info Card
   infoCard: {
+    paddingVertical: spacing.md,
+  },
+  infoContent: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingHorizontal: 18,
-    paddingVertical: 18,
-    backgroundColor: 'rgba(59,130,246,0.12)',
+    gap: spacing.sm,
   },
   infoText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 13,
     color: colors.textSecondary,
-    marginLeft: 12,
-    lineHeight: 20,
+    lineHeight: 18,
   },
+  // Button
+  buttonWrapper: {
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  // Skip Button
   skipButton: {
-    backgroundColor: colors.glassLight,
-    borderRadius: 18,
+    marginTop: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    alignItems: 'center',
+    borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    marginTop: 10,
+    backgroundColor: colors.glassLight,
   },
   skipButtonText: {
-    color: colors.textPrimary,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
+    color: colors.textMuted,
+    fontWeight: '500',
   },
 });
 
