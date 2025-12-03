@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,26 +8,30 @@ import {
   Alert,
   Platform,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import * as Animatable from 'react-native-animatable';
+import { useFocusEffect } from '@react-navigation/native';
 
-import ModernButton from '../../components/ModernButton.jsx';
-import mockData from '../../data/mockData.json';
 import GlassHeader from '../../components/ui/GlassHeader.jsx';
 import CleanCard from '../../components/ui/CleanCard.jsx';
 import AppBackground from '../../components/layout/AppBackground.jsx';
 import { StatusBar } from 'react-native';
 import { colors, typography, spacing } from '../../theme/designTokens';
+import paymentService from '../../services/paymentService';
 
-const DriverEarningsScreen = ({ navigation }) => {
+const DriverEarningsScreen = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('today');
   const [showWithdrawal, setShowWithdrawal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [summary, setSummary] = useState(null);
+  const [transactions, setTransactions] = useState([]);
+  const [error, setError] = useState(null);
 
-  const driver = mockData.users[1];
-  const earnings = driver.earnings;
+  const COMMISSION_RATE = 0.2; // Keep in sync with backend estimate in DriverEarningsResponse
 
   const periods = [
     { key: 'today', label: 'Hôm nay' },
@@ -36,53 +40,151 @@ const DriverEarningsScreen = ({ navigation }) => {
     { key: 'year', label: 'Năm này' }
   ];
 
-  const earningsData = {
-    today: { gross: 125000, commission: 18750, net: 106250, rides: 8 },
-    week: { gross: 850000, commission: 127500, net: 722500, rides: 45 },
-    month: { gross: 3200000, commission: 480000, net: 2720000, rides: 180 },
-    year: { gross: 28500000, commission: 4275000, net: 24225000, rides: 1520 }
+  const toNumber = (value) => {
+    if (typeof value === 'number') return value;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
   };
 
-  const currentData = earningsData[selectedPeriod];
-  const commissionRate = earnings.commission;
+  const normalizeTransactions = useCallback((rawList) => {
+    const list = Array.isArray(rawList) ? rawList : [];
 
-  const recentEarnings = [
-    {
-      id: 1,
-      date: '2024-01-16T14:30:00Z',
-      riderName: 'Nguyen Van A',
-      route: 'Ký túc xá A → Trường FPT',
-      fare: 15000,
-      commission: 2250,
-      net: 12750,
-      status: 'completed'
+    return list
+      .map((tx) => ({
+        ...tx,
+        amount: toNumber(tx.amount),
+        type: (tx.type || '').toUpperCase(),
+        direction: (tx.direction || '').toUpperCase(),
+        status: (tx.status || '').toUpperCase(),
+        createdAt: tx.createdAt || tx.created_at || tx.timestamp,
+        sharedRideId: tx.sharedRideId || tx.shared_ride_id || tx.sharedRideID,
+      }))
+      .filter((tx) => tx.type === 'CAPTURE_FARE')
+      .filter((tx) => tx.direction === 'IN')
+      .filter((tx) => !tx.status || tx.status === 'SUCCESS')
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }, []);
+
+  const fetchData = useCallback(
+    async (isRefresh = false) => {
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      setError(null);
+
+      try {
+        const [earningsRes, txRes] = await Promise.all([
+          paymentService.getDriverEarnings(),
+          paymentService.getTransactionHistory(0, 100, 'CAPTURE_FARE', 'SUCCESS'),
+        ]);
+
+        setSummary(earningsRes || {});
+
+        const txList = Array.isArray(txRes?.content)
+          ? txRes.content
+          : Array.isArray(txRes?.data)
+          ? txRes.data
+          : Array.isArray(txRes?.items)
+          ? txRes.items
+          : Array.isArray(txRes)
+          ? txRes
+          : [];
+
+        setTransactions(normalizeTransactions(txList));
+      } catch (err) {
+        console.error('Failed to load driver earnings:', err);
+        setError(err?.message || 'Không thể tải dữ liệu thu nhập');
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
     },
-    {
-      id: 2,
-      date: '2024-01-16T12:15:00Z',
-      riderName: 'Le Thi B',
-      route: 'Nhà văn hóa → Chợ Bến Thành',
-      fare: 25000,
-      commission: 3750,
-      net: 21250,
-      status: 'completed'
-    },
-    {
-      id: 3,
-      date: '2024-01-16T10:45:00Z',
-      riderName: 'Pham Van C',
-      route: 'Trọ sinh viên → Trường FPT',
-      fare: 18000,
-      commission: 2700,
-      net: 15300,
-      status: 'completed'
+    [normalizeTransactions]
+  );
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchData(true);
+    }, [fetchData])
+  );
+
+  const getPeriodStart = (periodKey) => {
+    const now = new Date();
+    switch (periodKey) {
+      case 'today': {
+        const d = new Date(now);
+        d.setHours(0, 0, 0, 0);
+        return d;
+      }
+      case 'week': {
+        const d = new Date(now);
+        const day = d.getDay();
+        const diff = day === 0 ? 6 : day - 1; // Monday as start
+        d.setHours(0, 0, 0, 0);
+        d.setDate(d.getDate() - diff);
+        return d;
+      }
+      case 'month': {
+        return new Date(now.getFullYear(), now.getMonth(), 1);
+      }
+      case 'year': {
+        return new Date(now.getFullYear(), 0, 1);
+      }
+      default:
+        return new Date(0);
     }
-  ];
+  };
+
+  const estimateCommission = (netAmount) => {
+    if (COMMISSION_RATE === 0) return 0;
+    return netAmount * COMMISSION_RATE / (1 - COMMISSION_RATE);
+  };
+
+  const buildPeriodData = useCallback(
+    (periodKey) => {
+      const start = getPeriodStart(periodKey);
+      const filtered = transactions.filter((tx) => {
+        const created = new Date(tx.createdAt);
+        return created >= start;
+      });
+
+      let net = filtered.reduce((sum, tx) => sum + toNumber(tx.amount), 0);
+      if (periodKey === 'week' && summary?.weekEarnings != null) {
+        net = toNumber(summary.weekEarnings);
+      } else if (periodKey === 'month' && summary?.monthEarnings != null) {
+        net = toNumber(summary.monthEarnings);
+      } else if (periodKey === 'year' && summary?.totalEarnings != null && net === 0) {
+        net = toNumber(summary.totalEarnings);
+      }
+
+      const commission = net > 0 ? estimateCommission(net) : 0;
+      const gross = net + commission;
+      const rides = filtered.length;
+
+      return {
+        gross,
+        commission,
+        net,
+        rides,
+      };
+    },
+    [summary, transactions]
+  );
+
+  const currentData = buildPeriodData(selectedPeriod);
+
+  const recentEarnings = transactions.slice(0, 10);
 
   const handleWithdrawal = () => {
     Alert.alert(
       'Yêu cầu rút tiền',
-      `Số dư khả dụng: ${earnings.thisMonth.toLocaleString()} VNĐ\nPhí xử lý: 5,000 VNĐ`,
+      `Số dư khả dụng: ${toNumber(summary?.availableBalance).toLocaleString()} VNĐ\nPhí xử lý: 5,000 VNĐ`,
       [
         { text: 'Hủy', style: 'cancel' },
         { text: 'Tiếp tục', onPress: () => setShowWithdrawal(true) }
@@ -106,27 +208,38 @@ const DriverEarningsScreen = ({ navigation }) => {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString('vi-VN', { 
+    return date.toLocaleString('vi-VN', { 
       hour: '2-digit', 
-      minute: '2-digit' 
+      minute: '2-digit',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
     });
   };
 
-  const formatCurrency = (amount) => {
-    if (amount >= 1000000) {
-      return `${(amount / 1000000).toFixed(1)}M`;
-    } else if (amount >= 1000) {
-      return `${(amount / 1000).toFixed(0)}k`;
-    }
-    return amount.toString();
+  const onRefresh = async () => {
+    fetchData(true);
   };
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 1000);
-  };
+  if (loading) {
+    return (
+      <AppBackground>
+        <SafeAreaView style={styles.container} edges={['top']}>
+          <StatusBar barStyle="light-content" />
+          <View style={styles.headerSpacing}>
+            <GlassHeader
+              title="Thu nhập của tôi"
+              subtitle="Đang tải dữ liệu..."
+            />
+          </View>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            {error && <Text style={styles.errorText}>{error}</Text>}
+          </View>
+        </SafeAreaView>
+      </AppBackground>
+    );
+  }
 
   return (
     <AppBackground>
@@ -181,7 +294,7 @@ const DriverEarningsScreen = ({ navigation }) => {
               <CleanCard style={styles.heroCard} contentStyle={styles.heroCardContent}>
                 <Text style={styles.heroLabel}>Thu nhập ròng</Text>
                 <Text style={styles.heroAmount}>
-                  {currentData.net.toLocaleString()}đ
+                  {toNumber(currentData.net).toLocaleString()}đ
                 </Text>
                 <View style={styles.heroMeta}>
                   <View style={styles.heroMetaItem}>
@@ -192,7 +305,9 @@ const DriverEarningsScreen = ({ navigation }) => {
                   <View style={styles.heroMetaItem}>
                     <Icon name="trending-up" size={16} color={colors.textSecondary} />
                     <Text style={styles.heroMetaText}>
-                      {Math.round(currentData.net / currentData.rides).toLocaleString()}đ/chuyến
+                      {currentData.rides > 0
+                        ? Math.round(currentData.net / currentData.rides).toLocaleString()
+                        : '0'}đ/chuyến
                     </Text>
                   </View>
                 </View>
@@ -211,7 +326,7 @@ const DriverEarningsScreen = ({ navigation }) => {
                     <View style={styles.breakdownContent}>
                       <Text style={styles.breakdownLabel}>Tổng doanh thu</Text>
                       <Text style={styles.breakdownValue}>
-                        {currentData.gross.toLocaleString()}đ
+                        {toNumber(currentData.gross).toLocaleString()}đ
                       </Text>
                     </View>
                   </View>
@@ -222,10 +337,10 @@ const DriverEarningsScreen = ({ navigation }) => {
                     </View>
                     <View style={styles.breakdownContent}>
                       <Text style={styles.breakdownLabel}>
-                        Hoa hồng ({(commissionRate * 100)}%)
+                        Hoa hồng (ước tính {COMMISSION_RATE * 100}%)
                       </Text>
                       <Text style={[styles.breakdownValue, styles.breakdownValueNegative]}>
-                        -{currentData.commission.toLocaleString()}đ
+                        -{toNumber(currentData.commission).toLocaleString()}đ
                       </Text>
                     </View>
                   </View>
@@ -240,7 +355,7 @@ const DriverEarningsScreen = ({ navigation }) => {
                   <View>
                     <Text style={styles.balanceLabel}>Số dư khả dụng</Text>
                     <Text style={styles.balanceAmount}>
-                      {earnings.thisMonth.toLocaleString()}đ
+                      {toNumber(summary?.availableBalance).toLocaleString()}đ
                     </Text>
                   </View>
                   <View style={[styles.balanceIcon, { backgroundColor: '#E8F5E9' }]}>
@@ -268,7 +383,7 @@ const DriverEarningsScreen = ({ navigation }) => {
               <Text style={styles.sectionTitle}>Thu nhập gần đây</Text>
               {recentEarnings.map((earning, index) => (
                 <Animatable.View 
-                  key={earning.id}
+                  key={earning.txnId || earning.id || index}
                   animation="fadeInUp" 
                   duration={400}
                   delay={240 + index * 40}
@@ -280,21 +395,23 @@ const DriverEarningsScreen = ({ navigation }) => {
                           <Icon name="check-circle" size={18} color="#4CAF50" />
                         </View>
                         <View style={styles.earningInfo}>
-                          <Text style={styles.earningRider}>{earning.riderName}</Text>
-                          <Text style={styles.earningTime}>{formatDate(earning.date)}</Text>
+                          <Text style={styles.earningRider}>
+                            {earning.riderName || earning.note || `Chuyến đi #${earning.sharedRideId || earning.sharedRideRequestId || 'N/A'}`}
+                          </Text>
+                          <Text style={styles.earningTime}>{formatDate(earning.createdAt)}</Text>
                         </View>
                       </View>
-                      <Text style={styles.earningAmount}>+{earning.net.toLocaleString()}đ</Text>
+                      <Text style={styles.earningAmount}>+{toNumber(earning.amount).toLocaleString()}đ</Text>
                     </View>
                     <Text style={styles.earningRoute} numberOfLines={1}>
-                      {earning.route}
+                      {earning.note || 'Hoa hồng đã trừ'}
                     </Text>
                     <View style={styles.earningDetails}>
                       <Text style={styles.earningDetailText}>
-                        Cước: {earning.fare.toLocaleString()}đ
+                        Thu nhập: {toNumber(earning.amount).toLocaleString()}đ
                       </Text>
                       <Text style={styles.earningDetailText}>
-                        Hoa hồng: -{earning.commission.toLocaleString()}đ
+                        Hoa hồng (ước tính): -{toNumber(estimateCommission(toNumber(earning.amount))).toLocaleString()}đ
                       </Text>
                     </View>
                   </CleanCard>
@@ -317,7 +434,7 @@ const DriverEarningsScreen = ({ navigation }) => {
               
               <View style={styles.modalBody}>
                 <Text style={styles.availableBalance}>
-                  Số dư khả dụng: {earnings.thisMonth.toLocaleString()} VNĐ
+                  Số dư khả dụng: {toNumber(summary?.availableBalance).toLocaleString()} VNĐ
                 </Text>
                 
                 <View style={styles.withdrawalOptions}>
@@ -337,7 +454,7 @@ const DriverEarningsScreen = ({ navigation }) => {
                   
                   <TouchableOpacity 
                     style={styles.withdrawalOption}
-                    onPress={() => confirmWithdrawal(earnings.thisMonth)}
+                    onPress={() => confirmWithdrawal(toNumber(summary?.availableBalance))}
                   >
                     <Text style={styles.withdrawalAmount}>Tất cả</Text>
                   </TouchableOpacity>
@@ -360,6 +477,19 @@ const DriverEarningsScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+  },
+  errorText: {
+    fontSize: typography.body,
+    fontFamily: 'Inter_500Medium',
+    color: colors.error || '#EF4444',
+    textAlign: 'center',
   },
   scrollView: {
     flex: 1,
