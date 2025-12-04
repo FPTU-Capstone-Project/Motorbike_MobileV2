@@ -43,7 +43,7 @@ class ProfileService {
       
       // Save updated user data to storage
       if (response) {
-        await this.saveUserToStorage(response);
+      await this.saveUserToStorage(response);
       }
       
       return response;

@@ -173,7 +173,7 @@ class ApiService {
               'Authorization': `Bearer ${this.token}`,
             };
           } else {
-            config.headers = this.getAuthHeaders();
+          config.headers = this.getAuthHeaders();
           }
           response = await fetch(url, config);
           data = await this.parseResponse(response);

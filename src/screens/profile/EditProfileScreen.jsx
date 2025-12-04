@@ -167,16 +167,16 @@ const EditProfileScreen = ({ navigation }) => {
 
       // Refresh profile to get updated avatar URL
       try {
-        const freshProfile = await profileService.getCurrentUserProfile();
-        if (freshProfile) {
-          setUser(freshProfile);
-          setFormData({
-            fullName: freshProfile.user?.full_name || '',
-            email: freshProfile.user?.email || '',
-            phone: freshProfile.user?.phone || '',
-            studentId: freshProfile.user?.student_id || '',
-            emergencyContact: freshProfile.rider_profile?.emergency_contact || '',
-          });
+      const freshProfile = await profileService.getCurrentUserProfile();
+      if (freshProfile) {
+        setUser(freshProfile);
+        setFormData({
+          fullName: freshProfile.user?.full_name || '',
+          email: freshProfile.user?.email || '',
+          phone: freshProfile.user?.phone || '',
+          studentId: freshProfile.user?.student_id || '',
+          emergencyContact: freshProfile.rider_profile?.emergency_contact || '',
+        });
 
           // Also update authService user data
           try {
@@ -212,7 +212,7 @@ const EditProfileScreen = ({ navigation }) => {
         } else if (error.status >= 500) {
           errorMessage = 'Lỗi máy chủ. Vui lòng thử lại sau.';
         } else {
-          errorMessage = error.message || errorMessage;
+        errorMessage = error.message || errorMessage;
         }
       } else if (error.message) {
         errorMessage = error.message;
@@ -337,7 +337,7 @@ const EditProfileScreen = ({ navigation }) => {
         } else if (error.status >= 500) {
           message = 'Lỗi máy chủ. Vui lòng thử lại sau.';
         } else {
-          message = error.message || message;
+        message = error.message || message;
         }
       } else if (error.message) {
         message = error.message;
