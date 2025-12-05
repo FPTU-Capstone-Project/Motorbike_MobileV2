@@ -38,6 +38,12 @@ const EditProfileScreen = ({ navigation }) => {
     studentId: '',
     emergencyContact: '',
   });
+  const [errors, setErrors] = useState({
+    fullName: '',
+    phone: '',
+    studentId: '',
+    emergencyContact: '',
+  });
 
   useEffect(() => {
     loadUserProfile();
@@ -65,6 +71,9 @@ const EditProfileScreen = ({ navigation }) => {
 
   const updateFormData = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: '' }));
+    }
   };
 
   const pickAvatar = async () => {
@@ -224,18 +233,74 @@ const EditProfileScreen = ({ navigation }) => {
     }
   };
 
-  const saveProfile = async () => {
-    // Validation
-    if (!formData.fullName.trim()) {
-      Alert.alert('Lỗi', 'Vui lòng nhập họ và tên');
-      return;
+  const validateProfile = () => {
+    const { fullName, phone, studentId, emergencyContact } = formData;
+    const newErrors = {
+      fullName: '',
+      phone: '',
+      studentId: '',
+      emergencyContact: '',
+    };
+    let isValid = true;
+
+    const trimmedName = fullName.trim();
+    if (!trimmedName) {
+      newErrors.fullName = 'Vui lòng nhập họ và tên';
+      isValid = false;
+    } else {
+      if (trimmedName.length < 2) {
+        newErrors.fullName = 'Họ và tên phải có ít nhất 2 ký tự';
+        isValid = false;
+      } else if (trimmedName.length > 100) {
+        newErrors.fullName = 'Họ và tên không được vượt quá 100 ký tự';
+        isValid = false;
+      } else if (
+        !/^[a-zA-ZàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđĐ\s'-]+$/.test(
+          trimmedName,
+        )
+      ) {
+        newErrors.fullName =
+          'Họ và tên chỉ được chứa chữ cái, khoảng trắng, dấu gạch ngang và ký tự tiếng Việt';
+        isValid = false;
+      }
     }
+
+    const trimmedPhone = phone.trim();
+    if (trimmedPhone && !/^[0-9]{9,11}$/.test(trimmedPhone)) {
+      newErrors.phone = 'Số điện thoại không hợp lệ (9-11 chữ số)';
+      isValid = false;
+    }
+
+    const trimmedEmergency = emergencyContact.trim();
+    if (trimmedEmergency && !/^[0-9]{9,11}$/.test(trimmedEmergency)) {
+      newErrors.emergencyContact = 'Số điện thoại khẩn cấp phải từ 9 đến 11 chữ số';
+      isValid = false;
+    }
+
+    const trimmedStudentId = studentId.trim();
+    if (trimmedStudentId && !/^[A-Za-z]{2}[0-9]{6}$/.test(trimmedStudentId)) {
+      newErrors.studentId = 'Mã số sinh viên phải gồm 2 chữ cái đầu và 6 chữ số (VD: SE123456)';
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const saveProfile = async () => {
+    // Basic email presence/format check (email chỉ đọc nhưng vẫn đảm bảo hợp lệ)
     if (!formData.email.trim()) {
       Alert.alert('Lỗi', 'Vui lòng nhập email');
       return;
     }
     if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
       Alert.alert('Lỗi', 'Email không hợp lệ');
+      return;
+    }
+
+    // Frontend validation for other fields
+    const isValid = validateProfile();
+    if (!isValid) {
       return;
     }
 
@@ -403,42 +468,82 @@ const EditProfileScreen = ({ navigation }) => {
 
             <CleanCard contentStyle={styles.formCard}>
               <Text style={styles.sectionHeading}>Thông tin cơ bản</Text>
-              <InputRow
-                icon="user"
-                placeholder="Họ và tên"
-                value={formData.fullName}
-                onChangeText={(v) => updateFormData('fullName', v)}
-              />
-              <InputRow
-                icon="mail"
-                placeholder="Email"
-                value={formData.email}
-                editable={false}
-              />
-              <InputRow
-                icon="phone"
-                placeholder="Số điện thoại"
-                value={formData.phone}
-                onChangeText={(v) => updateFormData('phone', v)}
-                keyboardType="phone-pad"
-              />
-              <InputRow
-                icon="id-card"
-                placeholder="Mã số sinh viên"
-                value={formData.studentId}
-                onChangeText={(v) => updateFormData('studentId', v)}
-              />
+
+              <View style={styles.fieldGroup}>
+                <InputRow
+                  icon="user"
+                  placeholder="Họ và tên"
+                  value={formData.fullName}
+                  onChangeText={(v) => updateFormData('fullName', v)}
+                  error={errors.fullName}
+                />
+                <Text style={[styles.errorText, !errors.fullName && styles.errorTextHidden]}>
+                  {errors.fullName || 'placeholder'}
+                </Text>
+              </View>
+
+              <View style={styles.fieldGroup}>
+                <InputRow
+                  icon="mail"
+                  placeholder="Email"
+                  value={formData.email}
+                  editable={false}
+                />
+                <Text style={[styles.errorText, styles.errorTextHidden]}>
+                  placeholder
+                </Text>
+              </View>
+
+              <View style={styles.fieldGroup}>
+                <InputRow
+                  icon="phone"
+                  placeholder="Số điện thoại"
+                  value={formData.phone}
+                  onChangeText={(v) => updateFormData('phone', v)}
+                  keyboardType="phone-pad"
+                  error={errors.phone}
+                />
+                <Text style={[styles.errorText, !errors.phone && styles.errorTextHidden]}>
+                  {errors.phone || 'placeholder'}
+                </Text>
+              </View>
+
+              <View style={styles.fieldGroup}>
+                <InputRow
+                  icon="credit-card"
+                  placeholder="Mã số sinh viên"
+                  value={formData.studentId}
+                  onChangeText={(v) => updateFormData('studentId', v)}
+                  error={errors.studentId}
+                />
+                <Text style={[styles.errorText, !errors.studentId && styles.errorTextHidden]}>
+                  {errors.studentId || 'placeholder'}
+                </Text>
+              </View>
             </CleanCard>
 
             <CleanCard contentStyle={styles.formCard}>
               <Text style={styles.sectionHeading}>Liên hệ khẩn cấp</Text>
-              <InputRow
-                icon="phone-call"
-                placeholder="Số điện thoại khẩn cấp"
-                value={formData.emergencyContact}
-                onChangeText={(v) => updateFormData('emergencyContact', v)}
-                keyboardType="phone-pad"
-              />
+
+              <View style={styles.fieldGroup}>
+                <InputRow
+                  icon="phone-call"
+                  placeholder="Số điện thoại khẩn cấp"
+                  value={formData.emergencyContact}
+                  onChangeText={(v) => updateFormData('emergencyContact', v)}
+                  keyboardType="phone-pad"
+                  error={errors.emergencyContact}
+                />
+                <Text
+                  style={[
+                    styles.errorText,
+                    !errors.emergencyContact && styles.errorTextHidden,
+                  ]}
+                >
+                  {errors.emergencyContact || 'placeholder'}
+                </Text>
+              </View>
+
               <Text style={styles.helperText}>
                 Thông tin này sẽ được sử dụng trong trường hợp khẩn cấp.
               </Text>
@@ -457,10 +562,15 @@ const EditProfileScreen = ({ navigation }) => {
 };
 
 const InputRow = (props) => {
-  const { icon, editable = true, style, ...rest } = props;
+  const { icon, editable = true, style, error, ...rest } = props;
   return (
-    <View style={[styles.inputRow, style]}>
-      <Feather name={icon} size={18} color="#8E8E93" style={{ marginRight: 12 }} />
+    <View style={[styles.inputRow, error && styles.inputRowError, style]}>
+      <Feather
+        name={icon}
+        size={18}
+        color={error ? '#EF4444' : '#8E8E93'}
+        style={{ marginRight: 12 }}
+      />
       <TextInput
         style={[styles.input, !editable && styles.inputDisabled]}
         placeholderTextColor="#B0B0B3"
@@ -524,14 +634,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   formCard: {
-    gap: 14,
     paddingVertical: 22,
     paddingHorizontal: 20,
+    gap: 0,
   },
   sectionHeading: {
     fontSize: 16,
     fontWeight: '700',
     color: '#0A0A0A',
+    marginBottom: 4,
+  },
+  fieldGroup: {
+    marginBottom: 16,
   },
   inputRow: {
     flexDirection: 'row',
@@ -542,6 +656,10 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderWidth: 1,
     borderColor: '#E6E6EA',
+  },
+  inputRowError: {
+    borderColor: '#EF4444',
+    borderWidth: 2,
   },
   input: {
     flex: 1,
@@ -555,6 +673,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#9CA3AF',
     lineHeight: 18,
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 13,
+    fontWeight: '500',
+    marginLeft: 16,
+    marginTop: 3,
+    minHeight: 18,
+    lineHeight: 18,
+  },
+  errorTextHidden: {
+    opacity: 0,
   },
 });
 
