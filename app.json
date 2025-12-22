@@ -3,7 +3,7 @@
     "name": "MSSUS",
     "scheme": "mssus-iat-rs-app",
     "slug": "mssus",
-    "owner": "defaultgfbg",
+    "owner": "dixel",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/motorcycle-vector.png",
@@ -50,18 +50,18 @@
         "READ_MEDIA_IMAGES",
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
-        "WAKE_LOCK"
+        "WAKE_LOCK",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION"
       ],
       "package": "com.dbao0312.mssusiatrs",
       "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/motorcycle-vector.png"
-    },
-    "extra": {
-      "eas": {
-        "projectId": "2ace6196-39b7-4a3a-ba48-53454b83156a"
-      }
     },
     "plugins": [
       "expo-font",
@@ -81,6 +81,11 @@
           }
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "ef6ba6e3-1207-4fea-a51f-de8850df6963"
+      }
+    }
   }
 }
