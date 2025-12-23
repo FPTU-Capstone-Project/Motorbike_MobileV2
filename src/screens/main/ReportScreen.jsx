@@ -17,10 +17,11 @@ import * as Animatable from 'react-native-animatable';
 
 import ModernButton from '../../components/ModernButton.jsx';
 import GlassHeader, { SoftBackHeader } from '../../components/ui/GlassHeader.jsx';
+import CleanCard from '../../components/ui/CleanCard.jsx';
 import AppBackground from '../../components/layout/AppBackground.jsx';
 import reportService from '../../services/reportService';
 import { ApiError } from '../../services/api';
-import { colors, typography, spacing } from '../../theme/designTokens';
+import { colors, typography, spacing, radii } from '../../theme/designTokens';
 
 const ReportScreen = ({ navigation }) => {
   const [reportType, setReportType] = useState(null);
@@ -77,7 +78,6 @@ const ReportScreen = ({ navigation }) => {
             {
               text: 'OK',
               onPress: () => {
-                // Reset form
                 setReportType(null);
                 setPriority('MEDIUM');
                 setDescription('');
@@ -131,10 +131,11 @@ const ReportScreen = ({ navigation }) => {
             style={styles.scrollView}
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
-            <Animatable.View animation="fadeInUp" duration={300}>
-              {/* Report Type Selection */}
-              <View style={styles.section}>
+            {/* Report Type Selection */}
+            <Animatable.View animation="fadeInUp" duration={400} delay={50}>
+              <CleanCard style={styles.cardSpacing} contentStyle={styles.cardContent}>
                 <Text style={styles.sectionTitle}>Loại báo cáo *</Text>
                 <View style={styles.typeGrid}>
                   {reportTypes.map((type) => (
@@ -151,7 +152,9 @@ const ReportScreen = ({ navigation }) => {
                       <View
                         style={[
                           styles.typeIconContainer,
-                          { backgroundColor: reportType === type.value ? type.color + '15' : '#F3F4F6' },
+                          reportType === type.value && {
+                            backgroundColor: type.color + '15',
+                          },
                         ]}
                       >
                         <Icon
@@ -163,7 +166,10 @@ const ReportScreen = ({ navigation }) => {
                       <Text
                         style={[
                           styles.typeLabel,
-                          reportType === type.value && { color: type.color, fontFamily: 'Inter_600SemiBold' },
+                          reportType === type.value && {
+                            color: type.color,
+                            fontFamily: 'Inter_600SemiBold',
+                          },
                         ]}
                       >
                         {type.label}
@@ -171,10 +177,12 @@ const ReportScreen = ({ navigation }) => {
                     </TouchableOpacity>
                   ))}
                 </View>
-              </View>
+              </CleanCard>
+            </Animatable.View>
 
-              {/* Priority Selection */}
-              <View style={styles.section}>
+            {/* Priority Selection */}
+            <Animatable.View animation="fadeInUp" duration={400} delay={150}>
+              <CleanCard style={styles.cardSpacing} contentStyle={styles.cardContent}>
                 <Text style={styles.sectionTitle}>Mức độ ưu tiên</Text>
                 <View style={styles.priorityContainer}>
                   {priorities.map((p) => (
@@ -183,15 +191,24 @@ const ReportScreen = ({ navigation }) => {
                       style={[
                         styles.priorityButton,
                         priority === p.value && styles.priorityButtonActive,
-                        priority === p.value && { borderColor: p.color, backgroundColor: p.color + '15' },
+                        priority === p.value && {
+                          borderColor: p.color,
+                          backgroundColor: p.color + '15',
+                        },
                       ]}
                       onPress={() => setPriority(p.value)}
                       activeOpacity={0.7}
                     >
+                      {priority === p.value && (
+                        <View style={[styles.priorityDot, { backgroundColor: p.color }]} />
+                      )}
                       <Text
                         style={[
                           styles.priorityText,
-                          priority === p.value && { color: p.color, fontFamily: 'Inter_600SemiBold' },
+                          priority === p.value && {
+                            color: p.color,
+                            fontFamily: 'Inter_600SemiBold',
+                          },
                         ]}
                       >
                         {p.label}
@@ -199,50 +216,61 @@ const ReportScreen = ({ navigation }) => {
                     </TouchableOpacity>
                   ))}
                 </View>
-              </View>
+              </CleanCard>
+            </Animatable.View>
 
-              {/* Description Input */}
-              <View style={styles.section}>
+            {/* Description Input */}
+            <Animatable.View animation="fadeInUp" duration={400} delay={250}>
+              <CleanCard style={styles.cardSpacing} contentStyle={styles.cardContent}>
                 <Text style={styles.sectionTitle}>Mô tả chi tiết *</Text>
-                <TextInput
-                  style={styles.descriptionInput}
-                  placeholder="Mô tả chi tiết vấn đề bạn gặp phải (tối thiểu 10 ký tự)..."
-                  placeholderTextColor={colors.textMuted}
-                  multiline
-                  numberOfLines={8}
-                  value={description}
-                  onChangeText={setDescription}
-                  maxLength={2000}
-                  textAlignVertical="top"
-                />
-                <View style={styles.charCount}>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={styles.descriptionInput}
+                    placeholder="Mô tả chi tiết vấn đề bạn gặp phải (tối thiểu 10 ký tự)..."
+                    placeholderTextColor={colors.textMuted}
+                    multiline
+                    numberOfLines={8}
+                    value={description}
+                    onChangeText={setDescription}
+                    maxLength={2000}
+                    textAlignVertical="top"
+                  />
+                </View>
+                <View style={styles.inputFooter}>
                   <Text style={styles.charCountText}>
                     {description.length}/2000 ký tự
                   </Text>
+                  {description.length > 0 && description.length < 10 && (
+                    <Text style={styles.helperText}>
+                      Mô tả phải có ít nhất 10 ký tự
+                    </Text>
+                  )}
                 </View>
-                {description.length > 0 && description.length < 10 && (
-                  <Text style={styles.helperText}>
-                    Mô tả phải có ít nhất 10 ký tự
-                  </Text>
-                )}
+              </CleanCard>
+            </Animatable.View>
+
+            {/* Submit Button */}
+            <Animatable.View animation="fadeInUp" duration={400} delay={350}>
+              <View style={styles.buttonContainer}>
+                <ModernButton
+                  title={loading ? 'Đang gửi...' : 'Gửi báo cáo'}
+                  onPress={handleSubmit}
+                  disabled={loading || !isFormValid()}
+                  icon={loading ? null : 'send'}
+                />
               </View>
+            </Animatable.View>
 
-              {/* Submit Button */}
-              <ModernButton
-                title={loading ? 'Đang gửi...' : 'Gửi báo cáo'}
-                onPress={handleSubmit}
-                disabled={loading || !isFormValid()}
-                style={styles.submitButton}
-                icon={loading ? null : 'send'}
-              />
-
-              {/* Info Note */}
-              <View style={styles.infoCard}>
-                <Icon name="info" size={20} color={colors.accent} />
+            {/* Info Note */}
+            <Animatable.View animation="fadeInUp" duration={400} delay={400}>
+              <CleanCard variant="accent" style={styles.cardSpacing} contentStyle={styles.infoCardContent}>
+                <View style={styles.infoIconContainer}>
+                  <Icon name="info" size={20} color={colors.accent} />
+                </View>
                 <Text style={styles.infoText}>
                   Báo cáo của bạn sẽ được gửi trực tiếp đến quản trị viên. Chúng tôi sẽ xem xét và phản hồi trong thời gian sớm nhất.
                 </Text>
-              </View>
+              </CleanCard>
             </Animatable.View>
           </ScrollView>
         </SafeAreaView>
@@ -257,17 +285,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
+    paddingTop: 24,
+    paddingBottom: 140,
   },
-  section: {
-    marginBottom: 24,
+  cardSpacing: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+  },
+  cardContent: {
+    paddingVertical: 20,
+    paddingHorizontal: 20,
   },
   sectionTitle: {
     fontSize: typography.subheading,
     fontFamily: 'Inter_600SemiBold',
     color: colors.textPrimary,
-    marginBottom: 12,
+    marginBottom: 16,
   },
   typeGrid: {
     flexDirection: 'row',
@@ -276,12 +309,14 @@ const styles = StyleSheet.create({
   },
   typeCard: {
     width: '47%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
     padding: 16,
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(148,163,184,0.25)',
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    minHeight: 110,
+    justifyContent: 'center',
   },
   typeCardActive: {
     borderWidth: 2,
@@ -289,16 +324,18 @@ const styles = StyleSheet.create({
   typeIconContainer: {
     width: 48,
     height: 48,
-    borderRadius: 12,
+    borderRadius: radii.sm,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
+    backgroundColor: colors.backgroundMuted,
   },
   typeLabel: {
     fontSize: typography.small,
     fontFamily: 'Inter_500Medium',
     color: colors.textPrimary,
     textAlign: 'center',
+    lineHeight: 18,
   },
   priorityContainer: {
     flexDirection: 'row',
@@ -309,36 +346,47 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: '22%',
     paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    borderRadius: radii.sm,
+    backgroundColor: colors.surface,
     borderWidth: 1.5,
-    borderColor: 'rgba(148,163,184,0.3)',
+    borderColor: colors.border,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
   },
   priorityButtonActive: {
     borderWidth: 2,
+  },
+  priorityDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   priorityText: {
     fontSize: typography.small,
     fontFamily: 'Inter_500Medium',
     color: colors.textSecondary,
   },
-  descriptionInput: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+  inputContainer: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: 'rgba(148,163,184,0.25)',
+    borderColor: colors.border,
+    marginBottom: 12,
+  },
+  descriptionInput: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
     fontFamily: 'Inter_400Regular',
     color: colors.textPrimary,
-    fontSize: 15,
+    fontSize: typography.body,
     minHeight: 120,
+    lineHeight: 22,
   },
-  charCount: {
+  inputFooter: {
     alignItems: 'flex-end',
-    marginTop: 8,
   },
   charCountText: {
     fontSize: 12,
@@ -349,20 +397,27 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Inter_400Regular',
     color: '#EF4444',
-    marginTop: 8,
-    marginLeft: 4,
+    marginTop: 6,
   },
-  submitButton: {
-    marginTop: 8,
+  buttonContainer: {
+    marginHorizontal: 20,
+    marginBottom: 20,
   },
-  infoCard: {
+  infoCardContent: {
     flexDirection: 'row',
-    backgroundColor: '#EEF7FF',
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 24,
-    gap: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
     alignItems: 'flex-start',
+    gap: 12,
+  },
+  infoIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.accent + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 2,
   },
   infoText: {
     flex: 1,
@@ -374,9 +429,3 @@ const styles = StyleSheet.create({
 });
 
 export default ReportScreen;
-
-
-
-
-
-
