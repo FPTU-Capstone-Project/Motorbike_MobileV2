@@ -1187,7 +1187,10 @@ const RideBookingScreen = ({ navigation, route }) => {
                 
                 {/* Expiry Info */}
                 <Text style={styles.expiryText}>
-                  Báo giá có hiệu lực đến {quote?.validUntil ? new Date(quote.validUntil).toLocaleTimeString('vi-VN') : ''}
+                  Báo giá có hiệu lực đến {quote?.validUntil ? (() => {
+                    const { formatTime } = require('../../utils/dateUtils');
+                    return formatTime(quote.validUntil);
+                  })() : ''}
                 </Text>
               </View>
             </View>

@@ -14,34 +14,33 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useFocusEffect } from '@react-navigation/native';
 import notificationService from '../../services/notificationService';
 import { colors } from '../../theme/designTokens';
+import { formatTimeAgo } from '../../utils/dateUtils';
+import { translateTitle, translateMessage } from '../../utils/notificationTranslations';
 
 const PAGE_SIZE = 20;
-
-const formatTimeAgo = (timestamp) => {
-  if (!timestamp) return '';
-  const date = new Date(timestamp);
-  if (Number.isNaN(date.getTime())) return '';
-  const diffMs = Date.now() - date.getTime();
-  const minutes = Math.round(diffMs / 60000);
-  if (minutes < 1) return 'Vừa xong';
-  if (minutes < 60) return `${minutes} phút trước`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours} giờ trước`;
-  const days = Math.round(hours / 24);
-  if (days < 7) return `${days} ngày trước`;
-  return date.toLocaleDateString('vi-VN', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
-};
 
 const typeIconMap = {
   RIDE_UPDATE: 'directions-bike',
   PAYMENT: 'paid',
   PROMOTION: 'local-offer',
   SYSTEM: 'info',
+  TRACKING_START: 'my-location',
+  RIDE_COMPLETED: 'check-circle',
+  PASSENGER_PICKUP: 'person-add',
+  NEW_RIDE_REQUEST: 'notifications',
   DEFAULT: 'notifications',
+};
+
+const typeTitleMap = {
+  RIDE_UPDATE: 'Cập nhật chuyến đi',
+  PAYMENT: 'Thanh toán',
+  PROMOTION: 'Khuyến mãi',
+  SYSTEM: 'Hệ thống',
+  TRACKING_START: 'Bắt đầu theo dõi',
+  RIDE_COMPLETED: 'Hoàn thành chuyến đi',
+  PASSENGER_PICKUP: 'Đón khách',
+  NEW_RIDE_REQUEST: 'Yêu cầu chuyến đi mới',
+  DEFAULT: 'Thông báo',
 };
 
 const NotificationsScreen = ({ navigation }) => {
@@ -59,8 +58,8 @@ const NotificationsScreen = ({ navigation }) => {
     const items = Array.isArray(response.data)
       ? response.data
       : Array.isArray(response.content)
-      ? response.content
-      : response.notifications || [];
+        ? response.content
+        : response.notifications || [];
     const pagination = response.pagination || response.metadata || null;
     return { items, pagination };
   };
@@ -189,7 +188,9 @@ const NotificationsScreen = ({ navigation }) => {
     if (!item.isRead) {
       handleMarkAsRead(item.notifId);
     }
-    Alert.alert(item.title || 'Thông báo', item.message || 'Không có nội dung');
+    const title = typeTitleMap[item.type] || translateTitle(item.title) || 'Thông báo';
+    const message = translateMessage(item.message) || 'Không có nội dung';
+    Alert.alert(title, message);
   };
 
   const renderNotification = ({ item }) => {
@@ -219,7 +220,7 @@ const NotificationsScreen = ({ navigation }) => {
                   !item.isRead && styles.notificationTitleUnread,
                 ]}
               >
-                {item.title || 'Thông báo'}
+                {typeTitleMap[item.type] || translateTitle(item.title) || 'Thông báo'}
               </Text>
               <Text style={styles.notificationTime}>
                 {formatTimeAgo(item.createdAt)}
@@ -229,7 +230,7 @@ const NotificationsScreen = ({ navigation }) => {
           {!item.isRead && <View style={styles.unreadDot} />}
         </View>
         {item.message ? (
-          <Text style={styles.notificationMessage}>{item.message}</Text>
+          <Text style={styles.notificationMessage}>{translateMessage(item.message)}</Text>
         ) : null}
         <View style={styles.notificationActions}>
           {!item.isRead && (

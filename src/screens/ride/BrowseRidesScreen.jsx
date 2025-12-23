@@ -130,56 +130,37 @@ const BrowseRidesScreen = ({ navigation }) => {
   const formatDateTime = (dateTimeString) => {
     if (!dateTimeString) return 'Ngay lập tức';
     
-    try {
-      // Backend sends local time (Vietnam UTC+7) but marks it as UTC with 'Z'
-      // Remove 'Z' to parse as local time without timezone conversion
-      let localTimeString = dateTimeString;
-      if (dateTimeString.endsWith('Z')) {
-        localTimeString = dateTimeString.replace('Z', '');
-      }
-      
-      // Parse as local time (no timezone conversion)
-      const date = new Date(localTimeString);
-      
-      // Check if date is valid
-      if (isNaN(date.getTime())) {
-        console.warn('⚠️ [BrowseRides] Invalid date:', dateTimeString);
-        return 'Ngay lập tức';
-      }
-      
-      // Extract hours and minutes directly from the string to avoid timezone issues
-      // Format: "2025-11-10T22:09:44" or "2025-11-10T22:09:44Z"
-      const timeMatch = localTimeString.match(/T(\d{2}):(\d{2})/);
-      if (timeMatch) {
-        const hours = parseInt(timeMatch[1], 10);
-        const minutes = parseInt(timeMatch[2], 10);
-        const ampm = hours >= 12 ? 'PM' : 'AM';
-        const displayHours = hours % 12 || 12;
-        return `${displayHours}:${String(minutes).padStart(2, '0')} ${ampm}`;
-      }
-      
-      // Fallback to Date parsing
-      const now = new Date();
-      const diffMs = date - now;
-      const diffMins = Math.floor(diffMs / 60000);
-      
-      if (diffMins < 0) return 'Đã qua';
-      if (diffMins < 60) return `Trong ${diffMins} phút`;
-      
-      const diffHours = Math.floor(diffMins / 60);
-      if (diffHours < 24) return `Trong ${diffHours} giờ`;
-      
-      // Format as local time (already in local timezone)
-      return date.toLocaleString('vi-VN', {
-        day: '2-digit',
-        month: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } catch (error) {
-      console.error('❌ [BrowseRides] Error formatting date time:', error, dateTimeString);
+    const { parseBackendDate } = require('../../utils/dateUtils');
+    const date = parseBackendDate(dateTimeString);
+    
+    if (!date) {
+      console.warn('⚠️ [BrowseRides] Invalid date:', dateTimeString);
       return 'Ngay lập tức';
     }
+    
+    // Check if date is in the past
+    const now = new Date();
+    const diffMs = date.getTime() - now.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 0) return 'Đã qua';
+    if (diffMins < 60) return `Trong ${diffMins} phút`;
+    
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `Trong ${diffHours} giờ`;
+    
+    // Format as "HH:mm DD-MM" to match the card display
+    // parseBackendDate already adjusted the time, so we format as-is
+    const timeStr = date.toLocaleTimeString('vi-VN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+    const dateStr = date.toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+    });
+    return `${timeStr} ${dateStr}`;
   };
 
   const renderRideItem = ({ item, index }) => {

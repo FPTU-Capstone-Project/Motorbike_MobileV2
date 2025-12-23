@@ -37,6 +37,7 @@ import paymentService from '../../services/paymentService';
 import { locationStorageService } from '../../services/locationStorageService';
 import activeRideService from '../../services/activeRideService';
 import notificationService from '../../services/notificationService';
+import { translateTitle, translateMessage } from '../../utils/notificationTranslations';
 
 const HomeScreen = ({ navigation }) => {
   const [currentLocation, setCurrentLocation] = useState(null);
@@ -323,7 +324,7 @@ const HomeScreen = ({ navigation }) => {
         console.log('⚠️ [HomeScreen] Unknown ride matching status:', data.status, 'Full data:', data);
         // Still show an alert for unknown statuses if there's a message
         if (data.message) {
-          Alert.alert('Thông báo', data.message, [{ text: 'OK' }]);
+          Alert.alert('Thông báo', translateMessage(data.message), [{ text: 'OK' }]);
         }
     }
   };
@@ -363,8 +364,8 @@ const HomeScreen = ({ navigation }) => {
       ratingAlertShownRef.current = true;
 
       Alert.alert(
-        notification.title || 'Chuyến đi hoàn thành',
-        notification.message || 'Chuyến đi của bạn đã hoàn thành. Cảm ơn bạn đã sử dụng dịch vụ!',
+        translateTitle(notification.title) || 'Chuyến đi hoàn thành',
+        translateMessage(notification.message) || 'Chuyến đi của bạn đã hoàn thành. Cảm ơn bạn đã sử dụng dịch vụ!',
         [
           {
             text: 'Đánh giá tài xế',
@@ -519,23 +520,25 @@ const HomeScreen = ({ navigation }) => {
   const formatScheduledTime = (scheduledTime) => {
     if (!scheduledTime) return 'Ngay lập tức';
     try {
-      const date =
-        scheduledTime instanceof Date
-          ? scheduledTime
-          : new Date(scheduledTime);
+      const { parseBackendDate, formatDateTimeCompact } = require('../../utils/dateUtils');
+      const date = parseBackendDate(scheduledTime);
 
-      if (Number.isNaN(date.getTime())) {
+      if (!date || Number.isNaN(date.getTime())) {
         return 'Ngay lập tức';
       }
 
-      const formatted = date.toLocaleString('vi-VN', {
-        timeZone: 'Asia/Ho_Chi_Minh',
+      // Format as "HH:mm DD-MM" (time and date)
+      // parseBackendDate already adjusted the time, so we format as-is
+      const time = date.toLocaleTimeString('vi-VN', {
         hour: '2-digit',
         minute: '2-digit',
+        hour12: false,
+      });
+      const dateStr = date.toLocaleDateString('vi-VN', {
         day: '2-digit',
         month: '2-digit',
       });
-      return formatted;
+      return `${time} ${dateStr}`;
     } catch (error) {
       console.error('Error formatting scheduled time:', error, scheduledTime);
       return 'Ngay lập tức';

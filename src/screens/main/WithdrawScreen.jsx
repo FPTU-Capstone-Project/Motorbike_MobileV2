@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   Modal,
   FlatList,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -24,6 +25,7 @@ import paymentService from '../../services/paymentService';
 import bankService from '../../services/bankService';
 import { ApiError } from '../../services/api';
 import { colors } from '../../theme/designTokens';
+import { getBankIconName, hasBankLogo } from '../../utils/bankIcons';
 
 const WithdrawScreen = ({ navigation, route }) => {
   const { walletData } = route.params || {};
@@ -34,8 +36,8 @@ const WithdrawScreen = ({ navigation, route }) => {
     bankBin: '',
     bankAccountNumber: '',
     accountHolderName: '',
-    mode: 'AUTOMATIC',
   });
+  const [selectedBank, setSelectedBank] = useState(null);
   const [banks, setBanks] = useState([]);
   const [loadingBanks, setLoadingBanks] = useState(false);
   const [showBankPicker, setShowBankPicker] = useState(false);
@@ -60,6 +62,12 @@ const WithdrawScreen = ({ navigation, route }) => {
   };
 
   const handleWithdrawInputChange = (field, value) => {
+    // For amount field, remove any non-digit characters (dots, commas, etc.)
+    if (field === 'amount') {
+      // Remove all non-numeric characters
+      value = value.replace(/[^0-9]/g, '');
+    }
+
     setWithdrawData((prev) => {
       const updated = { ...prev, [field]: value };
       return updated;
@@ -85,11 +93,7 @@ const WithdrawScreen = ({ navigation, route }) => {
       return;
     }
 
-    if (amount < 50000) {
-      setAmountError('Số tiền rút tối thiểu là 50.000 VNĐ');
-      return;
-    }
-
+    // Removed minimum amount check - allow any amount > 0
     if (amount > availableBalance) {
       setAmountError(`Số dư không đủ. Số dư khả dụng: ${paymentService.formatCurrency(availableBalance)}`);
       return;
@@ -106,7 +110,6 @@ const WithdrawScreen = ({ navigation, route }) => {
     return (
       amount &&
       amountNum > 0 &&
-      amountNum >= 50000 &&
       amountNum <= availableBalance &&
       bankName &&
       bankBin &&
@@ -120,16 +123,18 @@ const WithdrawScreen = ({ navigation, route }) => {
   };
 
   const handleBankSelect = (bank) => {
+    const shortName = bank.shortName || bank.short_name || bank.name || '';
     setWithdrawData((prev) => ({
       ...prev,
-      bankName: bank.name || bank.shortName || bank.short_name || '',
+      bankName: shortName,
       bankBin: bank.bin || '',
     }));
+    setSelectedBank(bank);
     setShowBankPicker(false);
   };
 
   const handleWithdraw = async () => {
-    const { amount, bankName, bankBin, bankAccountNumber, accountHolderName, mode } = withdrawData;
+    const { amount, bankName, bankBin, bankAccountNumber, accountHolderName } = withdrawData;
 
     if (!amount || !bankName || !bankBin || !bankAccountNumber || !accountHolderName) {
       Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ thông tin');
@@ -139,11 +144,6 @@ const WithdrawScreen = ({ navigation, route }) => {
     const withdrawAmount = parseInt(amount, 10);
     if (!withdrawAmount || withdrawAmount <= 0) {
       Alert.alert('Lỗi', 'Vui lòng nhập số tiền hợp lệ');
-      return;
-    }
-
-    if (withdrawAmount < 50000) {
-      Alert.alert('Lỗi', 'Số tiền rút tối thiểu là 50.000 VNĐ');
       return;
     }
 
@@ -176,7 +176,6 @@ const WithdrawScreen = ({ navigation, route }) => {
         bankBin,
         accountNumber: bankAccountNumber,
         accountHolder: accountHolderName,
-        mode,
       });
 
       const result = await paymentService.initiatePayout(
@@ -185,7 +184,7 @@ const WithdrawScreen = ({ navigation, route }) => {
         bankBin,
         bankAccountNumber,
         accountHolderName,
-        mode
+        'MANUAL' // Default to MANUAL mode
       );
 
       console.log('Payout result:', result);
@@ -299,14 +298,29 @@ const WithdrawScreen = ({ navigation, route }) => {
                   style={styles.bankSelector}
                   onPress={() => setShowBankPicker(true)}
                 >
-                  <Text
-                    style={[
-                      styles.bankSelectorText,
-                      !withdrawData.bankName && styles.bankSelectorPlaceholder,
-                    ]}
-                  >
-                    {withdrawData.bankName || 'Chọn ngân hàng'}
-                  </Text>
+                  <View style={styles.bankSelectorContent}>
+                    {selectedBank && hasBankLogo(selectedBank) ? (
+                      <Image
+                        source={{ uri: selectedBank.logo }}
+                        style={styles.bankIcon}
+                        resizeMode="contain"
+                      />
+                    ) : selectedBank ? (
+                      <Icon 
+                        name={getBankIconName(selectedBank) || 'account-balance-wallet'} 
+                        size={36} 
+                        color={colors.textSecondary} 
+                      />
+                    ) : null}
+                    <Text
+                      style={[
+                        styles.bankSelectorText,
+                        !withdrawData.bankName && styles.bankSelectorPlaceholder,
+                      ]}
+                    >
+                      {withdrawData.bankName || 'Chọn ngân hàng'}
+                    </Text>
+                  </View>
                   <Icon name="arrow-drop-down" size={24} color={colors.textSecondary} />
                 </TouchableOpacity>
               </View>
@@ -329,44 +343,6 @@ const WithdrawScreen = ({ navigation, route }) => {
                 value={withdrawData.accountHolderName}
                 onChangeText={(value) => handleWithdrawInputChange('accountHolderName', value)}
               />
-
-              <View style={styles.modeSelector}>
-                <Text style={styles.modeLabel}>Phương thức xử lý</Text>
-                <View style={styles.modeButtons}>
-                  <TouchableOpacity
-                    style={[
-                      styles.modeButton,
-                      withdrawData.mode === 'AUTOMATIC' && styles.modeButtonActive,
-                    ]}
-                    onPress={() => handleWithdrawInputChange('mode', 'AUTOMATIC')}
-                  >
-                    <Text
-                      style={[
-                        styles.modeButtonText,
-                        withdrawData.mode === 'AUTOMATIC' && styles.modeButtonTextActive,
-                      ]}
-                    >
-                      Tự động
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.modeButton,
-                      withdrawData.mode === 'MANUAL' && styles.modeButtonActive,
-                    ]}
-                    onPress={() => handleWithdrawInputChange('mode', 'MANUAL')}
-                  >
-                    <Text
-                      style={[
-                        styles.modeButtonText,
-                        withdrawData.mode === 'MANUAL' && styles.modeButtonTextActive,
-                      ]}
-                    >
-                      Thủ công
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
 
               <ModernButton
                 title={loading ? 'Đang xử lý...' : 'Xác nhận'}
@@ -405,16 +381,39 @@ const WithdrawScreen = ({ navigation, route }) => {
                   <FlatList
                     data={banks}
                     keyExtractor={(item, index) => item.bin || item.id || index.toString()}
-                    renderItem={({ item }) => (
-                      <TouchableOpacity
-                        style={styles.bankItem}
-                        onPress={() => handleBankSelect(item)}
-                      >
-                        <Text style={styles.bankItemName}>
-                          {item.name || item.shortName || item.short_name || 'Ngân hàng'}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
+                    renderItem={({ item }) => {
+                      const shortName = item.shortName || item.short_name || item.name || 'Ngân hàng';
+                      const bankIconName = getBankIconName(item);
+                      const hasLogo = hasBankLogo(item);
+                      
+                      return (
+                        <TouchableOpacity
+                          style={styles.bankItem}
+                          onPress={() => handleBankSelect(item)}
+                        >
+                          <View style={styles.bankItemContent}>
+                            {hasLogo ? (
+                              <Image
+                                source={{ uri: item.logo }}
+                                style={styles.bankItemIcon}
+                                resizeMode="contain"
+                              />
+                            ) : (
+                              <View style={styles.bankItemIconContainer}>
+                                <Icon 
+                                  name={bankIconName || 'account-balance-wallet'} 
+                                  size={40} 
+                                  color={colors.textSecondary} 
+                                />
+                              </View>
+                            )}
+                            <Text style={styles.bankItemName}>
+                              {shortName}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    }}
                   />
                 )}
               </View>
@@ -515,6 +514,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(148,163,184,0.25)',
   },
+  bankSelectorContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  bankIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
   bankSelectorText: {
     flex: 1,
     fontSize: 15,
@@ -539,52 +549,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginLeft: 4,
   },
-  modeSelector: {
-    marginTop: 8,
-    marginBottom: 24,
-  },
-  modeLabel: {
-    fontSize: 14,
-    fontFamily: 'Inter_600SemiBold',
-    color: colors.textPrimary,
-    marginBottom: 10,
-  },
-  modeButtons: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 8,
-  },
-  modeButton: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: 'rgba(148,163,184,0.3)',
-    alignItems: 'center',
-  },
-  modeButtonActive: {
-    backgroundColor: '#EEF7FF',
-    borderColor: colors.accent,
-  },
-  modeButtonText: {
-    fontSize: 13,
-    fontFamily: 'Inter_500Medium',
-    color: colors.textSecondary,
-  },
-  modeButtonTextActive: {
-    color: colors.accent,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  modeHelperText: {
-    fontSize: 12,
-    fontFamily: 'Inter_400Regular',
-    color: colors.textMuted,
-    marginTop: 4,
-  },
   submitButton: {
-    marginTop: 8,
+    marginTop: 24,
   },
   pickerOverlay: {
     flex: 1,
@@ -629,16 +595,27 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(148,163,184,0.18)',
   },
+  bankItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  bankItemIconContainer: {
+    width: 56,
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bankItemIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+  },
   bankItemName: {
+    flex: 1,
     fontSize: 15,
     fontFamily: 'Inter_500Medium',
     color: colors.textPrimary,
-    marginBottom: 4,
-  },
-  bankItemBin: {
-    fontSize: 12,
-    fontFamily: 'Inter_400Regular',
-    color: colors.textMuted,
   },
 });
 

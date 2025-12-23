@@ -146,6 +146,7 @@ const DriverProfileScreen = ({ navigation }) => {
     {
       title: 'Hỗ trợ',
       items: [
+        { icon: 'report-problem', title: 'Gửi báo cáo', onPress: () => navigation.navigate('Report') },
         { icon: 'help', title: 'Trung tâm trợ giúp', onPress: () => Alert.alert('Thông báo', 'Chức năng đang phát triển') },
         { icon: 'phone', title: 'Liên hệ hỗ trợ', onPress: () => Alert.alert('Thông báo', 'Chức năng đang phát triển') },
         { icon: 'feedback', title: 'Góp ý', onPress: () => Alert.alert('Thông báo', 'Chức năng đang phát triển') }

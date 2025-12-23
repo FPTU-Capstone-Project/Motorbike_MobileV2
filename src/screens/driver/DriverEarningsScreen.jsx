@@ -21,10 +21,10 @@ import AppBackground from '../../components/layout/AppBackground.jsx';
 import { StatusBar } from 'react-native';
 import { colors, typography, spacing } from '../../theme/designTokens';
 import paymentService from '../../services/paymentService';
+import { formatDateTimeCompact } from '../../utils/dateUtils';
 
-const DriverEarningsScreen = () => {
+const DriverEarningsScreen = ({ navigation }) => {
   const [selectedPeriod, setSelectedPeriod] = useState('today');
-  const [showWithdrawal, setShowWithdrawal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState(null);
@@ -195,39 +195,24 @@ const DriverEarningsScreen = () => {
   const recentEarnings = transactions.slice(0, 10);
 
   const handleWithdrawal = () => {
-    Alert.alert(
-      'Yêu cầu rút tiền',
-      `Số dư khả dụng: ${toNumber(summary?.availableBalance).toLocaleString()} VNĐ\nPhí xử lý: 5,000 VNĐ`,
-      [
-        { text: 'Hủy', style: 'cancel' },
-        { text: 'Tiếp tục', onPress: () => setShowWithdrawal(true) }
-      ]
-    );
-  };
+    if (!summary) {
+      Alert.alert('Lỗi', 'Không thể tải thông tin ví. Vui lòng thử lại.');
+      return;
+    }
 
-  const confirmWithdrawal = (amount) => {
-    Alert.alert(
-      'Xác nhận rút tiền',
-      `Rút ${amount.toLocaleString()} VNĐ về tài khoản ngân hàng?\nYêu cầu sẽ được xử lý trong 1-2 ngày làm việc.`,
-      [
-        { text: 'Hủy', style: 'cancel' },
-        { text: 'Xác nhận', onPress: () => {
-          setShowWithdrawal(false);
-          Alert.alert('Thành công', 'Yêu cầu rút tiền đã được gửi đi. Chúng tôi sẽ xử lý trong 1-2 ngày làm việc.');
-        }}
-      ]
-    );
+    // Navigate to WithdrawScreen with wallet data
+    navigation.navigate('Withdraw', {
+      walletData: {
+        availableBalance: summary?.availableBalance ?? 0,
+        available_balance: summary?.availableBalance ?? 0,
+        pendingBalance: summary?.pendingEarnings ?? 0,
+        pending_balance: summary?.pendingEarnings ?? 0,
+      }
+    });
   };
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('vi-VN', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
+    return formatDateTimeCompact(dateString);
   };
 
   const onRefresh = async () => {
@@ -433,55 +418,6 @@ const DriverEarningsScreen = () => {
             </View>
           </View>
         </ScrollView>
-
-        {/* Withdrawal Modal */}
-        {showWithdrawal && (
-          <View style={styles.modalOverlay}>
-            <Animatable.View animation="slideInUp" style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Rút tiền</Text>
-                <TouchableOpacity onPress={() => setShowWithdrawal(false)}>
-                  <Icon name="close" size={24} color={colors.textPrimary} />
-                </TouchableOpacity>
-              </View>
-              
-              <View style={styles.modalBody}>
-                <Text style={styles.availableBalance}>
-                  Số dư khả dụng: {toNumber(summary?.availableBalance).toLocaleString()} VNĐ
-                </Text>
-                
-                <View style={styles.withdrawalOptions}>
-                  <TouchableOpacity 
-                    style={styles.withdrawalOption}
-                    onPress={() => confirmWithdrawal(100000)}
-                  >
-                    <Text style={styles.withdrawalAmount}>100,000đ</Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity 
-                    style={styles.withdrawalOption}
-                    onPress={() => confirmWithdrawal(200000)}
-                  >
-                    <Text style={styles.withdrawalAmount}>200,000đ</Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity 
-                    style={styles.withdrawalOption}
-                    onPress={() => confirmWithdrawal(toNumber(summary?.availableBalance))}
-                  >
-                    <Text style={styles.withdrawalAmount}>Tất cả</Text>
-                  </TouchableOpacity>
-                </View>
-                
-                <Text style={styles.withdrawalNote}>
-                  • Phí xử lý: 5,000 VNĐ{'\n'}
-                  • Thời gian xử lý: 1-2 ngày làm việc{'\n'}
-                  • Tiền sẽ được chuyển vào tài khoản đã đăng ký
-                </Text>
-              </View>
-            </Animatable.View>
-          </View>
-        )}
       </SafeAreaView>
     </AppBackground>
   );
@@ -779,71 +715,6 @@ const styles = StyleSheet.create({
     fontSize: typography.small,
     fontFamily: 'Inter_400Regular',
     color: colors.textMuted,
-  },
-  // Modal
-  modalOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '80%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  modalTitle: {
-    fontSize: typography.subheading,
-    fontFamily: 'Inter_600SemiBold',
-    color: colors.textPrimary,
-  },
-  modalBody: {
-    padding: spacing.lg,
-  },
-  availableBalance: {
-    fontSize: typography.body,
-    fontFamily: 'Inter_500Medium',
-    color: colors.textPrimary,
-    marginBottom: spacing.lg,
-    textAlign: 'center',
-  },
-  withdrawalOptions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: spacing.lg,
-    gap: spacing.sm,
-  },
-  withdrawalOption: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  withdrawalAmount: {
-    fontSize: typography.body,
-    fontFamily: 'Inter_600SemiBold',
-    color: colors.textPrimary,
-  },
-  withdrawalNote: {
-    fontSize: typography.small,
-    fontFamily: 'Inter_400Regular',
-    color: colors.textSecondary,
-    lineHeight: 20,
   },
 });
 

@@ -793,15 +793,8 @@ class RideService {
   }
 
   formatDateTime(dateString) {
-    const date = new Date(dateString);
-    return (
-      date.toLocaleDateString("vi-VN") +
-      " " +
-      date.toLocaleTimeString("vi-VN", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    );
+    const { formatDateTime: formatDT } = require('../utils/dateUtils');
+    return formatDT(dateString);
   }
 
   calculateDistance(lat1, lon1, lat2, lon2) {

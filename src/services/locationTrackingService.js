@@ -527,7 +527,7 @@ class LocationTrackingService {
       // (Tùy ý) đảm bảo có notification channel quan trọng trên Android
       if (Platform.OS === 'android') {
         await Notifications.setNotificationChannelAsync('tracking', {
-          name: 'Ride Tracking',
+          name: 'Theo dõi chuyến đi',
           importance: Notifications.AndroidImportance.HIGH,
           vibrationPattern: [250],
           lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,

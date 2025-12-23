@@ -23,7 +23,7 @@ import GlassHeader from '../../components/ui/GlassHeader.jsx';
 import CleanCard from '../../components/ui/CleanCard.jsx';
 import AppBackground from '../../components/layout/AppBackground.jsx';
 import { colors } from '../../theme/designTokens';
-import { parseBackendDate } from '../../utils/time';
+import { parseBackendDate, formatDateTimeCompact, formatDateTimeForList } from '../../utils/dateUtils';
 
 const RideHistoryScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
@@ -443,41 +443,11 @@ const RideHistoryScreen = ({ navigation }) => {
   };
 
   const formatDate = (dateString) => {
-    const date = parseBackendDate(dateString);
-    if (!date) return 'N/A';
-
-    return `${String(date.getDate()).padStart(2, '0')}/${String(
-      date.getMonth() + 1
-    ).padStart(2, '0')}/${date.getFullYear()} ${String(date.getHours()).padStart(
-      2,
-      '0'
-    )}:${String(date.getMinutes()).padStart(2, '0')}`;
+    return formatDateTimeCompact(dateString) || 'N/A';
   };
 
   const formatDateForList = (dateString) => {
-    const date = parseBackendDate(dateString);
-    if (!date) return 'N/A';
-
-    const months = [
-      'Th 1',
-      'Th 2',
-      'Th 3',
-      'Th 4',
-      'Th 5',
-      'Th 6',
-      'Th 7',
-      'Th 8',
-      'Th 9',
-      'Th 10',
-      'Th 11',
-      'Th 12',
-    ];
-    const day = date.getDate();
-    const month = months[date.getMonth()];
-    const hours = date.getHours() % 12 || 12;
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const period = date.getHours() >= 12 ? 'PM' : 'AM';
-    return `${day} ${month}, ${hours}:${minutes} ${period}`;
+    return formatDateTimeForList(dateString) || 'N/A';
   };
 
   const renderRideCard = (ride, index) => {

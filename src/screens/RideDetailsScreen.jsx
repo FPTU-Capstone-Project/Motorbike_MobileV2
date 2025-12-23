@@ -18,7 +18,7 @@ import rideService from '../services/rideService';
 import websocketService from '../services/websocketService';
 import ratingService from '../services/ratingService';
 import { colors } from '../theme/designTokens';
-import { parseBackendDate } from '../utils/time';
+import { formatDateTime as formatDT } from '../utils/dateUtils';
 
 const RideDetailsScreen = ({ navigation, route }) => {
   const { rideId, requestId: routeRequestId, ride: routeRide } = route?.params || {};
@@ -373,17 +373,8 @@ const RideDetailsScreen = ({ navigation, route }) => {
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Ngay lập tức';
-    const date = parseBackendDate(dateString);
-    if (!date) return 'Ngay lập tức';
-
-    return (
-      date.toLocaleDateString('vi-VN') +
-      ' lúc ' +
-      date.toLocaleTimeString('vi-VN', {
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    );
+    const formatted = formatDT(dateString);
+    return formatted ? formatted.replace(' ', ' lúc ') : 'Ngay lập tức';
   };
 
   const getStatusColor = (status) => {

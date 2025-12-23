@@ -244,6 +244,12 @@ export const ENDPOINTS = {
     STATS: "/banks/stats",
   },
 
+  // User Reports API
+  USER_REPORTS: {
+    SUBMIT: "/user-reports",
+    MY_REPORTS: "/user-reports/my-reports",
+  },
+
   // FCM Push Notifications
   FCM: {
     REGISTER: "/fcm/register",

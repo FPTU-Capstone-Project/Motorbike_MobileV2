@@ -26,7 +26,7 @@ import activeRideService from '../../services/activeRideService';
 import websocketService from '../../services/websocketService';
 import fcmService from '../../services/fcmService';
 import sosService from '../../services/sosService';
-import { parseBackendDate } from '../../utils/time';
+import { formatDateTime as formatDT } from '../../utils/dateUtils';
 import ModernButton from '../../components/ModernButton.jsx';
 import GoongMap from '../../components/GoongMap.jsx';
 import SOSButton from '../../components/SOSButton.jsx';
@@ -1009,16 +1009,7 @@ const RideTrackingScreen = ({ navigation, route }) => {
   };
 
   const formatDateTime = (dateTimeString) => {
-    const date = parseBackendDate(dateTimeString);
-    if (!date) return 'Không xác định';
-
-    return date.toLocaleString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return formatDT(dateTimeString) || 'Không xác định';
   };
 
   const formatCurrency = (amount) => {

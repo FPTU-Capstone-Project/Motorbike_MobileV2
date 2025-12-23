@@ -27,6 +27,7 @@ import paymentService from '../../services/paymentService';
 import { locationStorageService } from '../../services/locationStorageService';
 import RideOfferModal from '../../components/RideOfferModal';
 import notificationService from '../../services/notificationService';
+import { translateMessage } from '../../utils/notificationTranslations';
 import GlassHeader from '../../components/ui/GlassHeader.jsx';
 import CleanCard from '../../components/ui/CleanCard.jsx';
 import AppBackground from '../../components/layout/AppBackground.jsx';
@@ -456,22 +457,25 @@ const DriverHomeScreen = ({ navigation }) => {
     if (!scheduledTime) return 'Ngay lập tức';
     
     try {
-      // Backend sends local time (Vietnam UTC+7) but marks it as UTC with 'Z'
-      // Remove 'Z' to parse as local time without timezone conversion
-      const localTimeString = scheduledTime.replace('Z', '');
-      const date = new Date(localTimeString);
+      const { parseBackendDate } = require('../../utils/dateUtils');
+      const date = parseBackendDate(scheduledTime);
       
-      // Check if date is valid
-      if (isNaN(date.getTime())) {
+      if (!date || isNaN(date.getTime())) {
         return 'Ngay lập tức';
       }
       
-      // Get local time components (already in local timezone)
-      const hours = date.getHours();
-      const minutes = date.getMinutes();
-      const ampm = hours >= 12 ? 'PM' : 'AM';
-      const displayHours = hours % 12 || 12;
-      return `${displayHours}:${String(minutes).padStart(2, '0')} ${ampm}`;
+      // Format time in 12-hour format with date
+      // parseBackendDate already adjusted the time, so we format as-is
+      const hours = date.toLocaleTimeString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      });
+      const dateStr = date.toLocaleDateString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+      });
+      return `${hours} ${dateStr}`;
     } catch (error) {
       console.error('Error formatting scheduled time:', error, scheduledTime);
       return 'Ngay lập tức';
@@ -683,7 +687,7 @@ const DriverHomeScreen = ({ navigation }) => {
 
   const handleNotification = (notification) => {
     if (notification?.message) {
-      Alert.alert('Thông báo', notification.message);
+      Alert.alert('Thông báo', translateMessage(notification.message));
     }
     fetchUnreadCount();
   };

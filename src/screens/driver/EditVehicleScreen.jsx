@@ -108,7 +108,8 @@ const EditVehicleScreen = ({ navigation, route }) => {
 
   const formatDate = (date) => {
     if (!date) return 'Chưa cập nhật';
-    return new Date(date).toLocaleDateString('vi-VN', {
+    const { formatDate: formatD } = require('../../utils/dateUtils');
+    return formatD(date, {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',

@@ -14,7 +14,7 @@ import ModernButton from '../../components/ModernButton';
 import CleanCard from '../../components/ui/CleanCard';
 import { colors } from '../../theme/designTokens';
 import rideService from '../../services/rideService';
-import { parseBackendDate } from '../../utils/time';
+import { formatDateTime as formatDT } from '../../utils/dateUtils';
 
 const DriverCompletionScreen = ({ navigation, route }) => {
   const { completionData } = route.params || {};
@@ -36,16 +36,7 @@ const DriverCompletionScreen = ({ navigation, route }) => {
   const completedAt = completionData?.completed_at || completionData?.completedAt;
 
   const formatDateTime = (dateTimeString) => {
-    const date = parseBackendDate(dateTimeString);
-    if (!date) return 'N/A';
-
-    return date.toLocaleString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return formatDT(dateTimeString) || 'N/A';
   };
 
   const formatDuration = (minutes) => {

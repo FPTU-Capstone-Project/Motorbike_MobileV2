@@ -67,12 +67,12 @@ const CreateSharedRideScreen = ({ navigation }) => {
   const [endIsCampusAnchor, setEndIsCampusAnchor] = useState(false);
 
   const [datePart, setDatePart] = React.useState(() => new Date());     // hôm nay
-const [timePart, setTimePart] = React.useState(() => {
-  const d = new Date();
-  d.setMinutes(d.getMinutes() + (5 - (d.getMinutes() % 5 || 5))); // làm tròn lên 5'
-  d.setSeconds(0); d.setMilliseconds(0);
-  return d;
-});
+  const [timePart, setTimePart] = React.useState(() => {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() + (5 - (d.getMinutes() % 5 || 5))); // làm tròn lên 5'
+    d.setSeconds(0); d.setMilliseconds(0);
+    return d;
+  });
 
   const [scheduledTime, setScheduledTime] = React.useState(() => {
     const d = new Date();
@@ -89,25 +89,25 @@ const [timePart, setTimePart] = React.useState(() => {
   // Helper function to check if a location is a campus anchor
   const isCampusAnchor = (location, addressText = null) => {
     if (!location && !addressText) return false;
-    
+
     const locationName = (location?.name || location?.address || addressText || '').toLowerCase().trim();
     const locationId = location?.locationId || location?.id;
-    
+
     // First check: by name/address text patterns
     if (locationName) {
-      const isFPT = locationName.includes('fpt university') || 
-                    locationName.includes('fptu') ||
-                    locationName.includes('fpt university - hcmc campus');
+      const isFPT = locationName.includes('fpt university') ||
+        locationName.includes('fptu') ||
+        locationName.includes('fpt university - hcmc campus');
       const isSCH = locationName.includes('nhà văn hóa') ||
-                    locationName.includes('nhà văn hóa sinh viên') ||
-                    locationName.includes('student culture') ||
-                    locationName.includes('student culture house');
-      
+        locationName.includes('nhà văn hóa sinh viên') ||
+        locationName.includes('student culture') ||
+        locationName.includes('student culture house');
+
       if (isFPT || isSCH) {
         return true;
       }
     }
-    
+
     // Second check: against campus anchors list
     if (campusAnchors.length > 0 && location) {
       const isAnchor = campusAnchors.some(anchor => {
@@ -115,7 +115,7 @@ const [timePart, setTimePart] = React.useState(() => {
         if (locationId && anchor.id) return locationId === anchor.id;
         if (location.latitude && location.longitude && anchor.latitude && anchor.longitude) {
           const distance = Math.sqrt(
-            Math.pow(location.latitude - anchor.latitude, 2) + 
+            Math.pow(location.latitude - anchor.latitude, 2) +
             Math.pow(location.longitude - anchor.longitude, 2)
           );
           return distance < 0.001;
@@ -123,22 +123,22 @@ const [timePart, setTimePart] = React.useState(() => {
         const anchorName = (anchor.name || anchor.address || '').toLowerCase().trim();
         return locationName && locationName === anchorName;
       });
-      
+
       if (isAnchor) return true;
     }
-    
+
     // Third check: by coordinates
     if (location?.latitude && location?.longitude) {
-      if (Math.abs(location.latitude - 10.841480) < 0.001 && 
-          Math.abs(location.longitude - 106.809844) < 0.001) {
+      if (Math.abs(location.latitude - 10.841480) < 0.001 &&
+        Math.abs(location.longitude - 106.809844) < 0.001) {
         return true;
       }
-      if (Math.abs(location.latitude - 10.8753395) < 0.001 && 
-          Math.abs(location.longitude - 106.8000331) < 0.001) {
+      if (Math.abs(location.latitude - 10.8753395) < 0.001 &&
+        Math.abs(location.longitude - 106.8000331) < 0.001) {
         return true;
       }
     }
-    
+
     return false;
   };
 
@@ -168,7 +168,7 @@ const [timePart, setTimePart] = React.useState(() => {
       longitude: 106.8000331,
       isPOI: false
     };
-    
+
     if (!fptUniversityLocation) {
       setFptUniversityLocation(fallbackFPT);
     }
@@ -180,7 +180,7 @@ const [timePart, setTimePart] = React.useState(() => {
     const fetchCampusAnchors = async () => {
       try {
         const allLocations = await poiService.getAllLocations();
-        const fptUniversity = allLocations.find(loc => 
+        const fptUniversity = allLocations.find(loc =>
           (loc.name && (loc.name.includes('FPT University') || loc.name.includes('FPTU'))) ||
           (Math.abs(loc.latitude - 10.841480) < 0.001 && Math.abs(loc.longitude - 106.809844) < 0.001)
         );
@@ -191,7 +191,7 @@ const [timePart, setTimePart] = React.useState(() => {
 
         const anchors = [];
         let fptLoc = null;
-        
+
         if (fptUniversity) {
           fptLoc = {
             ...fptUniversity,
@@ -200,7 +200,7 @@ const [timePart, setTimePart] = React.useState(() => {
           };
           anchors.push(fptLoc);
         }
-        
+
         if (studentCultureHouse) {
           anchors.push({
             ...studentCultureHouse,
@@ -284,9 +284,9 @@ const [timePart, setTimePart] = React.useState(() => {
   const initializeLocation = async () => {
     try {
       setLoadingLocation(true);
-      
+
       const locationData = await locationStorageService.getCurrentLocationWithAddress();
-      
+
       if (locationData.location) {
         setCurrentLocation(locationData.location);
       } else {
@@ -391,17 +391,17 @@ const [timePart, setTimePart] = React.useState(() => {
     const hh = tPart.getHours();
     const mm = tPart.getMinutes();
     const ss = 0;
-  
+
     // Tạo Date object với giờ VN
     const resultDate = new Date(y, m, d, hh, mm, ss);
-  
+
     // Tạo ISO string không có timezone (backend expect format: 2025-10-05T08:00:00)
     const pad = (n) => String(n).padStart(2, '0');
     const isoLocal = `${y}-${pad(m + 1)}-${pad(d)}T${pad(hh)}:${pad(mm)}:${pad(ss)}`;
-  
+
     return { date: resultDate, isoVN: isoLocal };
   }
-  
+
   // Gom lại và cập nhật 2 state: scheduledTime (Date) & scheduledTimeIsoVN (string)
   function applySchedule(dPart, tPart) {
     const { date, isoVN } = combineVNDateTime(dPart, tPart);
@@ -411,21 +411,21 @@ const [timePart, setTimePart] = React.useState(() => {
 
   // Helper function to format Date object to backend expected format
   function formatDateTimeForBackend(date) {
-    const pad = (n) => String(n).padStart(2, '0');
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+    const { formatDateForBackend } = require('../../utils/dateUtils');
+    return formatDateForBackend(date);
   }
 
   const handleRouteSelect = (route) => {
     if (!route) return;
 
     setSelectedRoute(route);
-    
+
     // Populate locations from route
     if (route.fromLocation) {
       setStartLocation(route.fromLocation);
       setStartAddress(route.fromLocationName || route.fromLocation.name || 'Điểm đi');
     }
-    
+
     if (route.toLocation) {
       setEndLocation(route.toLocation);
       setEndAddress(route.toLocationName || route.toLocation.name || 'Điểm đến');
@@ -437,7 +437,7 @@ const [timePart, setTimePart] = React.useState(() => {
         const decodedPolyline = goongService.decodePolyline(route.polyline);
         const formattedPolyline = decodedPolyline.map(point => [point.longitude, point.latitude]);
         setRoutePolyline(formattedPolyline);
-        
+
         // Fit map to route
         if (mapRef.current && route.fromLocation && route.toLocation) {
           setTimeout(() => {
@@ -461,7 +461,7 @@ const [timePart, setTimePart] = React.useState(() => {
 
   const handleModeSwitch = (mode) => {
     setBookingMode(mode);
-    
+
     // Clear selections when switching modes
     if (mode === 'custom') {
       setSelectedRoute(null);
@@ -558,7 +558,7 @@ const [timePart, setTimePart] = React.useState(() => {
         return;
       }
       */
-      
+
       // For predefined mode, use locations from selected route
       if (bookingMode === 'predefined' && selectedRoute) {
         processedStartLocation = selectedRoute.fromLocation;
@@ -567,7 +567,7 @@ const [timePart, setTimePart] = React.useState(() => {
 
       // Prepare request body to match expected format
       const rideData = {};
-      
+
       // Only include scheduledDepartureTime if hasScheduledTime is true
       if (hasScheduledTime) {
         rideData.scheduledDepartureTime = scheduledTimeIsoVN || formatDateTimeForBackend(scheduledTime);
@@ -673,142 +673,142 @@ const [timePart, setTimePart] = React.useState(() => {
             onBackPress={() => navigation.goBack()}
           />
 
-        {/* Map */}
-        {goongService.isMapsConfigured() ? (
-          <GoongMap
-            onRef={(ref) => (mapRef.current = ref)}
-            style={styles.map}
-            initialRegion={
-              initialRegionRef.current || {
-                latitude: 10.8231,
-                longitude: 106.6297,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
+          {/* Map */}
+          {goongService.isMapsConfigured() ? (
+            <GoongMap
+              onRef={(ref) => (mapRef.current = ref)}
+              style={styles.map}
+              initialRegion={
+                initialRegionRef.current || {
+                  latitude: 10.8231,
+                  longitude: 106.6297,
+                  latitudeDelta: 0.01,
+                  longitudeDelta: 0.01,
+                }
               }
-            }
-            showsUserLocation={true}
-            markers={mapMarkers}
-            polyline={routePolyline}
-          />
-        ) : (
-          <View style={[styles.map, styles.mapPlaceholder]}>
-            <View style={styles.mapPlaceholderContent}>
-              <Icon name="map" size={60} color="#ccc" />
-              <Text style={styles.mapPlaceholderTitle}>Bản đồ không khả dụng</Text>
-              <Text style={styles.mapPlaceholderText}>
-                Vui lòng cấu hình Goong API key{'\n'}
-                hoặc sử dụng chức năng nhập địa chỉ bên dưới
-              </Text>
+              showsUserLocation={true}
+              markers={mapMarkers}
+              polyline={routePolyline}
+            />
+          ) : (
+            <View style={[styles.map, styles.mapPlaceholder]}>
+              <View style={styles.mapPlaceholderContent}>
+                <Icon name="map" size={60} color="#ccc" />
+                <Text style={styles.mapPlaceholderTitle}>Bản đồ không khả dụng</Text>
+                <Text style={styles.mapPlaceholderText}>
+                  Vui lòng cấu hình Goong API key{'\n'}
+                  hoặc sử dụng chức năng nhập địa chỉ bên dưới
+                </Text>
+              </View>
             </View>
-          </View>
-        )}
-
-        {/* Location Selection Overlay disabled */}
-        {false && (isSelectingStart || isSelectingEnd) && (
-          <View style={styles.selectionOverlay}>
-            <View style={styles.crosshair}>
-              <Icon name="my-location" size={30} color="#4CAF50" />
-            </View>
-            <Animatable.View 
-              animation="slideInUp" 
-              style={styles.selectionPrompt}
-            >
-              <Text style={styles.selectionText}>
-                {isSelectingStart ? 'Chọn điểm đi' : 'Chọn điểm đến'}
-              </Text>
-              <TouchableOpacity
-                style={styles.cancelSelectionButton}
-                onPress={() => {
-                  setIsSelectingStart(false);
-                  setIsSelectingEnd(false);
-                }}
-              >
-                <Text style={styles.cancelSelectionText}>Hủy</Text>
-              </TouchableOpacity>
-            </Animatable.View>
-          </View>
-        )}
-
-        {/* Control Buttons disabled */}
-        {false && (
-        <View style={styles.controlButtons}>
-          <TouchableOpacity
-            style={styles.controlButton}
-            onPress={() => centerMapToLocation(currentLocation)}
-          >
-            <Icon name="my-location" size={24} color="#4CAF50" />
-          </TouchableOpacity>
-          
-          {startLocation && endLocation && (
-            <TouchableOpacity
-              style={styles.controlButton}
-              onPress={fitMapToMarkers}
-            >
-              <Icon name="zoom-out-map" size={24} color="#4CAF50" />
-            </TouchableOpacity>
           )}
-        </View>
-        )}
 
-        {/* Bottom Panel */}
-        <Animatable.View 
-          animation="slideInUp" 
-          style={styles.bottomPanel}
-        >
-          <ScrollView
-            style={styles.content}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            nestedScrollEnabled={true}
-          >
-            {/* Mode Selection disabled */}
-            {false && (
-            <View style={styles.modeSelector}>
-              <TouchableOpacity
-                style={[
-                  styles.modeButton,
-                  bookingMode === 'predefined' && styles.modeButtonActive
-                ]}
-                onPress={() => handleModeSwitch('predefined')}
+          {/* Location Selection Overlay disabled */}
+          {false && (isSelectingStart || isSelectingEnd) && (
+            <View style={styles.selectionOverlay}>
+              <View style={styles.crosshair}>
+                <Icon name="my-location" size={30} color="#4CAF50" />
+              </View>
+              <Animatable.View
+                animation="slideInUp"
+                style={styles.selectionPrompt}
               >
-                <Icon 
-                  name="route" 
-                  size={18} 
-                  color={bookingMode === 'predefined' ? '#fff' : '#666'} 
-                  style={{ marginRight: 6 }}
-                />
-                <Text style={[
-                  styles.modeButtonText,
-                  bookingMode === 'predefined' && styles.modeButtonTextActive
-                ]}>
-                  Tuyến đường có sẵn
+                <Text style={styles.selectionText}>
+                  {isSelectingStart ? 'Chọn điểm đi' : 'Chọn điểm đến'}
                 </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[
-                  styles.modeButton,
-                  bookingMode === 'custom' && styles.modeButtonActive
-                ]}
-                onPress={() => handleModeSwitch('custom')}
-              >
-                <Icon 
-                  name="edit-location" 
-                  size={18} 
-                  color={bookingMode === 'custom' ? '#fff' : '#666'} 
-                  style={{ marginRight: 6 }}
-                />
-                <Text style={[
-                  styles.modeButtonText,
-                  bookingMode === 'custom' && styles.modeButtonTextActive
-                ]}>
-                  Tùy chọn
-                </Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.cancelSelectionButton}
+                  onPress={() => {
+                    setIsSelectingStart(false);
+                    setIsSelectingEnd(false);
+                  }}
+                >
+                  <Text style={styles.cancelSelectionText}>Hủy</Text>
+                </TouchableOpacity>
+              </Animatable.View>
             </View>
-            )}
+          )}
 
-            {/* Route Selector */}
+          {/* Control Buttons disabled */}
+          {false && (
+            <View style={styles.controlButtons}>
+              <TouchableOpacity
+                style={styles.controlButton}
+                onPress={() => centerMapToLocation(currentLocation)}
+              >
+                <Icon name="my-location" size={24} color="#4CAF50" />
+              </TouchableOpacity>
+
+              {startLocation && endLocation && (
+                <TouchableOpacity
+                  style={styles.controlButton}
+                  onPress={fitMapToMarkers}
+                >
+                  <Icon name="zoom-out-map" size={24} color="#4CAF50" />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
+          {/* Bottom Panel */}
+          <Animatable.View
+            animation="slideInUp"
+            style={styles.bottomPanel}
+          >
+            <ScrollView
+              style={styles.content}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              nestedScrollEnabled={true}
+            >
+              {/* Mode Selection disabled */}
+              {false && (
+                <View style={styles.modeSelector}>
+                  <TouchableOpacity
+                    style={[
+                      styles.modeButton,
+                      bookingMode === 'predefined' && styles.modeButtonActive
+                    ]}
+                    onPress={() => handleModeSwitch('predefined')}
+                  >
+                    <Icon
+                      name="route"
+                      size={18}
+                      color={bookingMode === 'predefined' ? '#fff' : '#666'}
+                      style={{ marginRight: 6 }}
+                    />
+                    <Text style={[
+                      styles.modeButtonText,
+                      bookingMode === 'predefined' && styles.modeButtonTextActive
+                    ]}>
+                      Tuyến đường có sẵn
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.modeButton,
+                      bookingMode === 'custom' && styles.modeButtonActive
+                    ]}
+                    onPress={() => handleModeSwitch('custom')}
+                  >
+                    <Icon
+                      name="edit-location"
+                      size={18}
+                      color={bookingMode === 'custom' ? '#fff' : '#666'}
+                      style={{ marginRight: 6 }}
+                    />
+                    <Text style={[
+                      styles.modeButtonText,
+                      bookingMode === 'custom' && styles.modeButtonTextActive
+                    ]}>
+                      Tùy chọn
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {/* Route Selector */}
               <View style={styles.routeSelector}>
                 {loadingRoutes ? (
                   <View style={styles.loadingRoutesContainer}>
@@ -821,7 +821,7 @@ const [timePart, setTimePart] = React.useState(() => {
                     <Text style={styles.emptyRoutesText}>Không có tuyến đường nào</Text>
                   </View>
                 ) : (
-                  <ScrollView 
+                  <ScrollView
                     style={styles.routesList}
                     showsVerticalScrollIndicator={false}
                     nestedScrollEnabled={true}
@@ -837,10 +837,10 @@ const [timePart, setTimePart] = React.useState(() => {
                       >
                         <View style={styles.routeCardContent}>
                           <View style={styles.routeCardHeader}>
-                            <Icon 
-                              name="route" 
-                              size={20} 
-                              color={selectedRoute?.routeId === route.routeId ? '#4CAF50' : '#666'} 
+                            <Icon
+                              name="route"
+                              size={20}
+                              color={selectedRoute?.routeId === route.routeId ? '#4CAF50' : '#666'}
                               style={{ marginRight: 8 }}
                             />
                             <Text style={[
@@ -850,7 +850,7 @@ const [timePart, setTimePart] = React.useState(() => {
                               {route.name}
                             </Text>
                           </View>
-                          
+
                           <View style={styles.routeCardLocations}>
                             <View style={styles.routeLocationItem}>
                               <Icon name="radio-button-checked" size={14} color="#4CAF50" style={{ marginRight: 8 }} />
@@ -865,7 +865,7 @@ const [timePart, setTimePart] = React.useState(() => {
                               </Text>
                             </View>
                           </View>
-                          
+
                           {route.defaultPrice != null && (
                             <View style={styles.routeCardPrice}>
                               <Text style={styles.routePriceText}>
@@ -874,7 +874,7 @@ const [timePart, setTimePart] = React.useState(() => {
                             </View>
                           )}
                         </View>
-                        
+
                         {selectedRoute?.routeId === route.routeId && (
                           <View style={styles.routeCardCheck}>
                             <Icon name="check-circle" size={24} color="#4CAF50" />
@@ -886,8 +886,8 @@ const [timePart, setTimePart] = React.useState(() => {
                 )}
               </View>
 
-            {/* Location Inputs - Custom Mode (disabled) */}
-            {/*
+              {/* Location Inputs - Custom Mode (disabled) */}
+              {/*
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Tuyến đường</Text>
 
@@ -950,7 +950,7 @@ const [timePart, setTimePart] = React.useState(() => {
                   />
                   
                   {/* End location selection button */}
-                  {/*<TouchableOpacity 
+              {/*<TouchableOpacity 
                     style={styles.mapSelectionButton}
                     onPress={() => setIsSelectingEnd(true)}
                   >
@@ -987,113 +987,113 @@ const [timePart, setTimePart] = React.useState(() => {
                     : 'Điểm đến phải là FPT University hoặc Nhà Văn Hóa Sinh Viên'}
                 </Text>
               </View>*/}
-             
-      
 
-            {/* Schedule */}
-            <View style={styles.section}>
-              <View style={styles.scheduleHeader}>
-                <Text style={styles.sectionTitle}>Thời gian khởi hành</Text>
-                <Switch
-                  value={hasScheduledTime}
-                  onValueChange={setHasScheduledTime}
-                  trackColor={{ false: '#E0E0E0', true: '#C8E6C9' }}
-                  thumbColor={hasScheduledTime ? '#4CAF50' : '#9E9E9E'}
-                />
-              </View>
-              
-              {hasScheduledTime ? (
-                <TouchableOpacity
-                  style={styles.dateTimeButton}
-                  onPress={() => setShowDatePicker(true)}
-                >
-                  <Icon name="schedule" size={20} color="#2196F3" />
-                  <Text style={styles.dateTimeText}>
-                    {scheduledTime.toLocaleString("vi-VN")}
-                  </Text>
-                  <Icon name="keyboard-arrow-right" size={20} color="#666" />
-                </TouchableOpacity>
-              ) : (
-                <View style={styles.scheduleNote}>
-                  <Icon name="info" size={16} color="#666" />
-                  <Text style={styles.scheduleNoteText}>
-                    Nếu thời gian khởi hành không được chỉ định thì chuyến xe khi được chia sẻ sẽ bắt đầu ngay lập tức
-                  </Text>
+
+
+              {/* Schedule - Hidden */}
+              <View style={styles.section}>
+                <View style={styles.scheduleHeader}>
+                  <Text style={styles.sectionTitle}>Thời gian khởi hành</Text>
+                  <Switch
+                    value={hasScheduledTime}
+                    onValueChange={setHasScheduledTime}
+                    trackColor={{ false: '#E0E0E0', true: '#C8E6C9' }}
+                    thumbColor={hasScheduledTime ? '#4CAF50' : '#9E9E9E'}
+                  />
                 </View>
-              )}
-            </View>
 
-            {/* Create Button */}
-            <TouchableOpacity
-              style={[styles.createButton, loading && styles.disabledButton]}
-              onPress={handleCreateRide}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <>
-                  <Icon name="add" size={20} color="#fff" />
-                  <Text style={styles.createButtonText}>Tạo chuyến đi</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </ScrollView>
-        </Animatable.View>
+                {hasScheduledTime ? (
+                  <TouchableOpacity
+                    style={styles.dateTimeButton}
+                    onPress={() => setShowDatePicker(true)}
+                  >
+                    <Icon name="schedule" size={20} color="#2196F3" />
+                    <Text style={styles.dateTimeText}>
+                      {scheduledTime.toLocaleString("vi-VN")}
+                    </Text>
+                    <Icon name="keyboard-arrow-right" size={20} color="#666" />
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.scheduleNote}>
+                    <Icon name="info" size={16} color="#666" />
+                    <Text style={styles.scheduleNoteText}>
+                      Nếu thời gian khởi hành không được chỉ định thì chuyến xe khi được chia sẻ sẽ bắt đầu ngay lập tức
+                    </Text>
+                  </View>
+                )}
+              </View>
 
-        {/* Date Time Picker */}
-        {showDatePicker && (
-  <DateTimePicker
-    value={datePart}
-    mode="date"
-    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-    // chỉ Android mới có event.type; iOS event có thể undefined
-    onChange={(event, selectedDate) => {
-      // đóng picker trên mọi nền tảng khi user đã chọn hoặc cancel
-      if (Platform.OS === 'android') setShowDatePicker(false);
-      if (event?.type === 'dismissed') {
-        if (Platform.OS === 'ios') setShowDatePicker(false);
-        return;
-      }
-      if (selectedDate) {
-        const next = new Date(selectedDate);
-        next.setHours(0, 0, 0, 0); // chỉ giữ Y-M-D
-        setDatePart(next);
-        // Cập nhật preview ngay (giữ HH:mm cũ)
-        applySchedule(next, timePart);
-        // đóng date picker và mở time picker
-        setShowDatePicker(false);
-        // dùng setTimeout 0 để tránh batch state làm kẹt modal trên iOS
-        setTimeout(() => setShowTimePicker(true), 0);
-      }
-    }}
-    
-    minimumDate={new Date()} // không cho chọn ngày quá khứ
-  />
-)}
+              {/* Create Button */}
+              <TouchableOpacity
+                style={[styles.createButton, loading && styles.disabledButton]}
+                onPress={handleCreateRide}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <>
+                    <Icon name="add" size={20} color="#fff" />
+                    <Text style={styles.createButtonText}>Tạo chuyến đi</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+          </Animatable.View>
 
-{/* Time Picker */}
-{showTimePicker && (
-  <DateTimePicker
-    value={timePart}
-    mode="time"
-    is24Hour={true}
-    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-    onChange={(event, selectedTime) => {
-      if (Platform.OS === 'android') {
-        setShowTimePicker(false);
-        if (event?.type === 'dismissed') return;
-      }
-      if (selectedTime) {
-        // Chỉ lấy HH:mm; giữ nguyên datePart
-        const next = new Date(timePart);
-        next.setHours(selectedTime.getHours(), selectedTime.getMinutes(), 0, 0);
-        setTimePart(next);
-        applySchedule(datePart, next);
-      }
-    }}
-  />
-)}
+          {/* Date Time Picker */}
+          {showDatePicker && (
+            <DateTimePicker
+              value={datePart}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              // chỉ Android mới có event.type; iOS event có thể undefined
+              onChange={(event, selectedDate) => {
+                // đóng picker trên mọi nền tảng khi user đã chọn hoặc cancel
+                if (Platform.OS === 'android') setShowDatePicker(false);
+                if (event?.type === 'dismissed') {
+                  if (Platform.OS === 'ios') setShowDatePicker(false);
+                  return;
+                }
+                if (selectedDate) {
+                  const next = new Date(selectedDate);
+                  next.setHours(0, 0, 0, 0); // chỉ giữ Y-M-D
+                  setDatePart(next);
+                  // Cập nhật preview ngay (giữ HH:mm cũ)
+                  applySchedule(next, timePart);
+                  // đóng date picker và mở time picker
+                  setShowDatePicker(false);
+                  // dùng setTimeout 0 để tránh batch state làm kẹt modal trên iOS
+                  setTimeout(() => setShowTimePicker(true), 0);
+                }
+              }}
+
+              minimumDate={new Date()} // không cho chọn ngày quá khứ
+            />
+          )}
+
+          {/* Time Picker */}
+          {showTimePicker && (
+            <DateTimePicker
+              value={timePart}
+              mode="time"
+              is24Hour={true}
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={(event, selectedTime) => {
+                if (Platform.OS === 'android') {
+                  setShowTimePicker(false);
+                  if (event?.type === 'dismissed') return;
+                }
+                if (selectedTime) {
+                  // Chỉ lấy HH:mm; giữ nguyên datePart
+                  const next = new Date(timePart);
+                  next.setHours(selectedTime.getHours(), selectedTime.getMinutes(), 0, 0);
+                  setTimePart(next);
+                  applySchedule(datePart, next);
+                }
+              }}
+            />
+          )}
         </SafeAreaView>
       </KeyboardAvoidingView>
     </AppBackground>

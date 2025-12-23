@@ -30,7 +30,7 @@ import paymentService from '../../services/paymentService';
 import authService from '../../services/authService';
 import { ApiError } from '../../services/api';
 import { colors } from '../../theme/designTokens';
-import { parseBackendDate } from '../../utils/time';
+import { formatDateTime } from '../../utils/dateUtils';
 
 const WalletScreen = ({ navigation }) => {
   const insets = useSafeAreaInsets();
@@ -314,18 +314,7 @@ const WalletScreen = ({ navigation }) => {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    // Format với locale Việt Nam, không chuyển đổi timezone
-    return `${date.toLocaleDateString('vi-VN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    })} ${date.toLocaleTimeString('vi-VN', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    })}`;
+    return formatDateTime(dateString);
   };
 
   // Normalize direction from backend (IN/OUT/INTERNAL) to standard format (INBOUND/OUTBOUND/INTERNAL)
